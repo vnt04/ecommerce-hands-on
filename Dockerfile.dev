@@ -1,0 +1,35 @@
+# Image dùng chung cho ba service shared, api và web ở môi trường phát triển.
+# Mỗi service chỉ khác nhau ở câu lệnh chạy, nên một image là đủ.
+# Image production (multi-stage, tối ưu dung lượng) làm ở bước S09.
+FROM node:22-alpine
+
+# uid và gid của tài khoản trên máy chủ. Container chạy dưới danh tính này để
+# tệp nó tạo ra vẫn sửa được từ bên ngoài. Xem docker-compose.yml và .env.example.
+ARG UID=1000
+ARG GID=1000
+
+# COREPACK_HOME phải nằm ngoài HOME vì uid truyền vào không có thư mục home
+# trong image. Không đặt thì corepack cố ghi vào /.cache và bị từ chối quyền.
+ENV COREPACK_HOME=/opt/corepack
+# pnpm cần một HOME ghi được cho tệp cấu hình tạm.
+ENV HOME=/tmp
+
+RUN corepack enable \
+    && corepack prepare pnpm@10.32.1 --activate \
+    && chmod -R a+rX /opt/corepack
+
+WORKDIR /app
+
+# Chỉ copy manifest trước để lớp cài đặt được cache lại khi mã nguồn đổi.
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages/shared/package.json ./packages/shared/
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+
+# Chuyển quyền sở hữu node_modules sang uid lúc chạy. Volume được khởi tạo từ
+# nội dung image, nên nếu để root sở hữu thì Vite không ghi được cache vào
+# node_modules/.vite và container dừng ngay khi khởi động.
+RUN pnpm install --frozen-lockfile \
+    && chown -R ${UID}:${GID} /app
+
+# Mã nguồn được bind mount lúc chạy, không copy vào image.

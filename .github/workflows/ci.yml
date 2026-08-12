@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Đọc phiên bản pnpm từ trường packageManager trong package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Đọc .nvmrc để CI và container dùng cùng phiên bản Node.
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # api và web import @shopflow/shared qua thư mục dist. Trên máy sạch
+      # thư mục đó chưa tồn tại, nên phải biên dịch trước khi lint và typecheck,
+      # nếu không cả hai bước đều báo không phân giải được module.
+      - name: Build shared package
+        run: pnpm --filter @shopflow/shared build
+
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build

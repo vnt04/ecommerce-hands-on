@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "sourceMap": true
+  },
+  "watchOptions": {
+    // tsc không đọc được biến môi trường WATCH_POLLING như Vite. Thay vào đó
+    // để nó tự chuyển sang polling khi hệ tệp không cấp sự kiện đáng tin cậy —
+    // đúng tình huống bind mount trên macOS và Windows.
+    "fallbackPolling": "dynamicPriority"
+  }
+}

@@ -1,0 +1,81 @@
+name: shopflow
+
+# Cấu hình dùng chung cho ba service chạy Node.
+#
+# Vì sao node_modules là volume riêng: mã nguồn được bind mount từ máy chủ,
+# nếu không có volume che lại thì node_modules của máy chủ sẽ đè lên bản cài
+# trong image — hai bên khác kiến trúc và khác phiên bản Node.
+#
+# Vì sao khai báo user: Docker chạy trực tiếp trên Linux không tự ánh xạ uid,
+# nên tệp do container tạo ra sẽ thuộc về uid của container. Lấy uid của máy
+# chủ từ .env để tệp vẫn sửa được từ bên ngoài. Docker Desktop trên macOS và
+# Windows tự ánh xạ nên giá trị này không gây ảnh hưởng ở đó.
+x-node-service: &node-service
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+    args:
+      UID: ${DOCKER_UID}
+      GID: ${DOCKER_GID}
+  user: '${DOCKER_UID}:${DOCKER_GID}'
+  volumes:
+    - .:/app
+    - node-modules-root:/app/node_modules
+    - node-modules-shared:/app/packages/shared/node_modules
+    - node-modules-api:/app/apps/api/node_modules
+    - node-modules-web:/app/apps/web/node_modules
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '${POSTGRES_PORT}:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Biên dịch packages/shared ở chế độ theo dõi. api và web đọc kết quả
+  # qua thư mục dist nằm trên bind mount, nên chỉ cần một tiến trình biên dịch.
+  shared:
+    <<: *node-service
+    command: pnpm --filter @shopflow/shared dev
+
+  api:
+    <<: *node-service
+    # Build shared một lần trước khi khởi động để không phụ thuộc thứ tự
+    # so với service shared. Lệnh này chạy dưới một giây.
+    command: sh -c "pnpm --filter @shopflow/shared build && pnpm --filter @shopflow/api dev"
+    environment:
+      PORT: 3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    <<: *node-service
+    command: sh -c "pnpm --filter @shopflow/shared build && pnpm --filter @shopflow/web dev"
+    environment:
+      # Tên service trong mạng nội bộ của Compose, không phải localhost.
+      API_URL: http://api:3000
+      WATCH_POLLING: ${WATCH_POLLING}
+    ports:
+      - '5173:5173'
+    depends_on:
+      - api
+
+volumes:
+  db-data:
+  node-modules-root:
+  node-modules-shared:
+  node-modules-api:
+  node-modules-web:
