@@ -1,0 +1,18 @@
+# Chuan hoa ky tu xuong dong ve LF trong repository.
+# Bat buoc: khong co dong nay, moi diff tao tren Windows se nhiem CRLF va khong doc duoc.
+* text=auto eol=lf
+
+# Tep nhi phan - khong dong vao noi dung
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.avif  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.pdf   binary
+
+# Tep sinh tu dong - an khoi diff tren GitHub
+pnpm-lock.yaml linguist-generated=true

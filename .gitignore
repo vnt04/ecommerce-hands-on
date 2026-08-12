@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Bien moi truong - khong bao gio commit
+.env
+.env.*
+!.env.example
+
+# Cache cong cu
+.vite/
+.eslintcache
+coverage/
+.nyc_output/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test
+playwright-report/
+test-results/
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# He dieu hanh
+.DS_Store
+Thumbs.db
+
+# Terraform (tu buoc S09)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
