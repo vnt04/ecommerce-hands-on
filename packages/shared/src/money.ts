@@ -16,9 +16,9 @@ const CURRENCY_SUFFIX = ' ₫';
  * Tự nhóm chữ số cho kết quả giống nhau ở mọi nơi.
  */
 export function formatVnd(amount: Vnd): string {
-  const isNegative = amount < 0n;
-  const digits = (isNegative ? -amount : amount).toString();
-  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, THOUSANDS_SEPARATOR);
+      const isNegative = amount < 0n;
+      const digits = (isNegative ? -amount : amount).toString();
+      const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, THOUSANDS_SEPARATOR);
 
-  return `${isNegative ? '-' : ''}${grouped}${CURRENCY_SUFFIX}`;
+      return `${isNegative ? '-' : ''}${grouped}${CURRENCY_SUFFIX}`;
 }

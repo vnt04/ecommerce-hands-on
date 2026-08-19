@@ -6,13 +6,16 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 indent_style = space
+indent_size = 6
+
+# YAML dùng 2 khoảng trắng: quy ước của GitHub Actions và Docker Compose,
+# và danh sách lồng nhau trong YAML đọc rất khó khi thụt sâu.
+[*.{yml,yaml}]
 indent_size = 2
 
 [*.md]
-trim_trailing_whitespace = false
-
-[*.{yml,yaml}]
 indent_size = 2
+trim_trailing_whitespace = false
 
 [Makefile]
 indent_style = tab

@@ -1,5 +1,5 @@
 {
-  "*.{ts,vue,js}": ["eslint --fix", "prettier --write"],
-  "*.{json,md,yml,yaml}": ["prettier --write"],
-  "*": ["secretlint --maskSecrets"]
+      "*.{ts,vue,js}": ["eslint --fix", "prettier --write"],
+      "*.{json,md,yml,yaml}": ["prettier --write"],
+      "*": ["secretlint --maskSecrets"]
 }

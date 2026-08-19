@@ -6,57 +6,57 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**'],
-  },
-
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
-  ...vue.configs['flat/recommended'],
-
-  {
-    languageOptions: {
-      globals: { ...globals.node, ...globals.browser },
-    },
-    plugins: { import: importPlugin },
-    settings: {
-      'import/resolver': {
-        typescript: {
-          project: ['apps/*/tsconfig.json', 'packages/*/tsconfig.json'],
-        },
+      {
+            ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**'],
       },
-    },
-    rules: {
-      /**
-       * macOS và Windows không phân biệt hoa thường trong tên tệp, container
-       * Linux và CI thì có. Không có luật này, một import sai hoa thường chạy
-       * được trên máy phát triển và chỉ hỏng khi build trong container.
-       */
-      'import/no-unresolved': ['error', { caseSensitive: true, caseSensitiveStrict: true }],
 
-      // Cấm any theo quy ước code. Không biết kiểu thì dùng unknown rồi thu hẹp.
-      '@typescript-eslint/no-explicit-any': 'error',
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      ...vue.configs['flat/recommended'],
 
-      // console chỉ được dùng trong script CLI, mã ứng dụng dùng logger.
-      'no-console': 'error',
-    },
-  },
+      {
+            languageOptions: {
+                  globals: { ...globals.node, ...globals.browser },
+            },
+            plugins: { import: importPlugin },
+            settings: {
+                  'import/resolver': {
+                        typescript: {
+                              project: ['apps/*/tsconfig.json', 'packages/*/tsconfig.json'],
+                        },
+                  },
+            },
+            rules: {
+                  /**
+                   * macOS và Windows không phân biệt hoa thường trong tên tệp, container
+                   * Linux và CI thì có. Không có luật này, một import sai hoa thường chạy
+                   * được trên máy phát triển và chỉ hỏng khi build trong container.
+                   */
+                  'import/no-unresolved': ['error', { caseSensitive: true, caseSensitiveStrict: true }],
 
-  {
-    // Vue SFC dùng vue-eslint-parser ở lớp ngoài, TypeScript ở phần <script>.
-    files: ['**/*.vue'],
-    languageOptions: {
-      parserOptions: { parser: tseslint.parser },
-    },
-  },
+                  // Cấm any theo quy ước code. Không biết kiểu thì dùng unknown rồi thu hẹp.
+                  '@typescript-eslint/no-explicit-any': 'error',
 
-  {
-    files: ['**/*.test.ts', '**/vitest.config.ts', '**/vite.config.ts', 'eslint.config.js'],
-    rules: {
-      'no-console': 'off',
-    },
-  },
+                  // console chỉ được dùng trong script CLI, mã ứng dụng dùng logger.
+                  'no-console': 'error',
+            },
+      },
 
-  // Đặt cuối cùng để tắt mọi luật về định dạng — việc đó thuộc về Prettier.
-  prettierConfig,
+      {
+            // Vue SFC dùng vue-eslint-parser ở lớp ngoài, TypeScript ở phần <script>.
+            files: ['**/*.vue'],
+            languageOptions: {
+                  parserOptions: { parser: tseslint.parser },
+            },
+      },
+
+      {
+            files: ['**/*.test.ts', '**/vitest.config.ts', '**/vite.config.ts', 'eslint.config.js'],
+            rules: {
+                  'no-console': 'off',
+            },
+      },
+
+      // Đặt cuối cùng để tắt mọi luật về định dạng — việc đó thuộc về Prettier.
+      prettierConfig,
 );

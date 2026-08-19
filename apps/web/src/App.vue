@@ -11,45 +11,45 @@ const apiStatus = ref('đang kiểm tra...');
 const sampleAmount = formatVnd(299000n);
 
 onMounted(async () => {
-  try {
-    const response = await fetch('/api/healthz');
+      try {
+            const response = await fetch('/api/healthz');
 
-    if (!response.ok) {
-      apiStatus.value = `lỗi HTTP ${response.status}`;
-      return;
-    }
+            if (!response.ok) {
+                  apiStatus.value = `lỗi HTTP ${response.status}`;
+                  return;
+            }
 
-    const body = (await response.json()) as HealthResponse;
-    apiStatus.value = body.status;
-  } catch {
-    apiStatus.value = 'không kết nối được';
-  }
+            const body = (await response.json()) as HealthResponse;
+            apiStatus.value = body.status;
+      } catch {
+            apiStatus.value = 'không kết nối được';
+      }
 });
 </script>
 
 <template>
-  <main>
-    <h1>ShopFlow</h1>
-    <dl>
-      <dt>API /healthz</dt>
-      <dd>{{ apiStatus }}</dd>
+      <main>
+            <h1>ShopFlow</h1>
+            <dl>
+                  <dt>API /healthz</dt>
+                  <dd>{{ apiStatus }}</dd>
 
-      <dt>shared.formatVnd(299000n)</dt>
-      <dd>{{ sampleAmount }}</dd>
-    </dl>
-  </main>
+                  <dt>shared.formatVnd(299000n)</dt>
+                  <dd>{{ sampleAmount }}</dd>
+            </dl>
+      </main>
 </template>
 
 <style>
 main {
-  max-width: 40rem;
-  margin: 3rem auto;
-  padding: 0 1rem;
-  font-family: system-ui, sans-serif;
+      max-width: 40rem;
+      margin: 3rem auto;
+      padding: 0 1rem;
+      font-family: system-ui, sans-serif;
 }
 
 dt {
-  font-weight: 600;
-  margin-top: 1rem;
+      font-weight: 600;
+      margin-top: 1rem;
 }
 </style>

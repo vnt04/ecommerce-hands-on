@@ -20,20 +20,20 @@ const POLLING_INTERVAL_MS = 300;
 const usePolling = process.env.WATCH_POLLING === 'true';
 
 export default defineConfig({
-  plugins: [vue()],
-  server: {
-    // 0.0.0.0 để truy cập được từ ngoài container.
-    host: '0.0.0.0',
-    port: WEB_PORT,
-    watch: usePolling ? { usePolling: true, interval: POLLING_INTERVAL_MS } : undefined,
-    proxy: {
-      // Web luôn gọi qua /api để môi trường phát triển và production cùng là
-      // same-origin. Prefix được bỏ trước khi chuyển tiếp vì api chưa có nó.
-      '/api': {
-        target: API_TARGET,
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+      plugins: [vue()],
+      server: {
+            // 0.0.0.0 để truy cập được từ ngoài container.
+            host: '0.0.0.0',
+            port: WEB_PORT,
+            watch: usePolling ? { usePolling: true, interval: POLLING_INTERVAL_MS } : undefined,
+            proxy: {
+                  // Web luôn gọi qua /api để môi trường phát triển và production cùng là
+                  // same-origin. Prefix được bỏ trước khi chuyển tiếp vì api chưa có nó.
+                  '/api': {
+                        target: API_TARGET,
+                        changeOrigin: true,
+                        rewrite: (path) => path.replace(/^\/api/, ''),
+                  },
+            },
       },
-    },
-  },
 });
