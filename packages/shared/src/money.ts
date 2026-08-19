@@ -45,3 +45,14 @@ export const vndFromJson = z
 export function vndToJson(amount: Vnd): string {
       return amount.toString();
 }
+
+/**
+ * Định dạng số tiền nhận từ API, vốn là chuỗi chữ số.
+ *
+ * Tồn tại để không ai phải tự viết `Number(value)` ở tầng giao diện: cách đó chạy
+ * đúng với mọi giá của cửa hàng áo thun nên lỗi không bao giờ lộ ra, nhưng nó mở
+ * lại đúng cánh cửa mà quy tắc số nguyên đóng lại.
+ */
+export function formatVndFromJson(amount: string): string {
+      return formatVnd(BigInt(amount));
+}

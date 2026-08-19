@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+
+/* Token dùng chung. Định nghĩa ở một chỗ thay vì rải trong từng component,
+   để đổi nhận diện là đổi một nơi. */
+@theme {
+      --color-brand: #1b2a4a;
+      --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}

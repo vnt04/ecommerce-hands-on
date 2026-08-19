@@ -1,36 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { vndToJson } from '@shopflow/shared';
+import { vndToJson, type CatalogFilterOptions, type ColorSummary, type ProductCard, type ProductDetail } from '@shopflow/shared';
 
 import { PrismaService } from '../../prisma/prisma.service.js';
 import type { ProductListQuery } from './dto/product-query.schema.js';
 
-export type ColorSummary = { code: string; name: string; hexCode: string };
-
-export type ProductCard = {
-      slug: string;
-      name: string;
-      minPrice: string;
-      colors: ColorSummary[];
-      inStock: boolean;
-};
-
 export type ProductListResult = {
       items: ProductCard[];
       meta: { page: number; limit: number; total: number };
-};
-
-export type ProductDetail = {
-      slug: string;
-      name: string;
-      description: string | null;
-      material: string | null;
-      careGuide: string | null;
-      printMethod: string | null;
-      colors: Array<ColorSummary & { images: Array<{ url: string; altText: string | null }> }>;
-      sizes: Array<{ name: string; sortOrder: number }>;
-      variants: Array<{ sku: string; colorCode: string; sizeName: string; price: string; inStock: boolean }>;
-      sizeChart: { name: string; measurements: unknown } | null;
 };
 
 type ProductCardRow = {
@@ -198,5 +175,27 @@ export class CatalogQueryService {
                   })),
                   sizeChart: product.sizeChart,
             };
+      }
+
+      /**
+       * Tập màu và size có thể lọc.
+       *
+       * Trang danh sách cần biết trước tập này để dựng bộ lọc: suy ra từ kết quả
+       * đang hiển thị sẽ cho bộ lọc thay đổi theo từng lần lọc, và người dùng mất
+       * đường quay lại lựa chọn vừa bỏ.
+       */
+      async listFilterOptions(): Promise<CatalogFilterOptions> {
+            const [colors, sizes] = await Promise.all([
+                  this.prisma.color.findMany({
+                        orderBy: { code: 'asc' },
+                        select: { code: true, name: true, hexCode: true },
+                  }),
+                  this.prisma.size.findMany({
+                        orderBy: { sortOrder: 'asc' },
+                        select: { name: true, sortOrder: true },
+                  }),
+            ]);
+
+            return { colors, sizes };
       }
 }

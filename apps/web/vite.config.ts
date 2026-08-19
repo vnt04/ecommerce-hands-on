@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vite';
 
@@ -20,7 +21,7 @@ const POLLING_INTERVAL_MS = 300;
 const usePolling = process.env.WATCH_POLLING === 'true';
 
 export default defineConfig({
-      plugins: [vue()],
+      plugins: [vue(), tailwindcss()],
       server: {
             // 0.0.0.0 để truy cập được từ ngoài container.
             host: '0.0.0.0',

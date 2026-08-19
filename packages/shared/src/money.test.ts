@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { formatVnd, vndFromJson, vndToJson } from './money.js';
+import { formatVnd, formatVndFromJson, vndFromJson, vndToJson } from './money.js';
 
 describe('formatVnd', () => {
       test('chèn dấu chấm phân cách hàng nghìn', () => {
@@ -54,5 +54,21 @@ describe('vndToJson', () => {
 
       test('giữ nguyên giá trị vượt giới hạn an toàn của number', () => {
             expect(vndToJson(9007199254740993n)).toBe('9007199254740993');
+      });
+});
+
+describe('formatVndFromJson', () => {
+      test('định dạng thẳng từ chuỗi API trả về', () => {
+            expect(formatVndFromJson('299000')).toBe('299.000 ₫');
+      });
+
+      test('giữ đúng giá trị vượt giới hạn an toàn của kiểu number', () => {
+            // Đây là lý do hàm này nhận chuỗi thay vì number: Number('9007199254740993')
+            // cho 9007199254740992, sai một đồng mà không có cảnh báo nào.
+            expect(formatVndFromJson('9007199254740993')).toBe('9.007.199.254.740.993 ₫');
+      });
+
+      test('ném lỗi với chuỗi không phải số nguyên', () => {
+            expect(() => formatVndFromJson('29.9')).toThrow();
       });
 });
