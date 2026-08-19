@@ -24,4 +24,21 @@ describe('EnvelopeInterceptor', () => {
       test('bọc cả giá trị rỗng để hình dạng response luôn nhất quán', async () => {
             await expect(runInterceptor(undefined)).resolves.toEqual({ success: true, data: undefined });
       });
+
+      test('tách items và meta của kết quả phân trang ra đúng vị trí', async () => {
+            // Nếu không tách, client phải bóc thêm một lớp: data.items thay vì data.
+            const meta = { page: 1, limit: 20, total: 2 };
+
+            await expect(runInterceptor({ items: ['a', 'b'], meta })).resolves.toEqual({
+                  success: true,
+                  data: ['a', 'b'],
+                  meta,
+            });
+      });
+
+      test('không nhầm object thường có trường tên items thành kết quả phân trang', async () => {
+            const value = { items: 'không phải mảng', meta: null };
+
+            await expect(runInterceptor(value)).resolves.toEqual({ success: true, data: value });
+      });
 });

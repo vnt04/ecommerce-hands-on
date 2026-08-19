@@ -53,7 +53,7 @@ Mỗi thực thể công khai có hai định danh, nên mọi endpoint nhận t
 danh công khai rồi mới có id nội bộ — thêm một chỉ mục và một bước tra cứu.
 
 Sinh `order_number` có bộ đếm theo ngày là điểm tranh chấp khi hai đơn được đặt đồng thời.
-Phải dùng sequence hoặc khoá, không dùng `SELECT MAX() + 1`. Xử lý ở S07.
+Phải dùng sequence hoặc khoá, không dùng `SELECT MAX() + 1`. Xử lý ở bước đặt hàng.
 
 ## Điều gì sẽ khiến ta xem lại
 

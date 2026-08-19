@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 import { loadEnv } from './config/env.js';
 import { HealthController } from './health/health.controller.js';
+import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 
 /**
@@ -40,6 +41,7 @@ const env = loadEnv();
                   },
             }),
             PrismaModule,
+            CatalogModule,
       ],
       controllers: [HealthController],
 })

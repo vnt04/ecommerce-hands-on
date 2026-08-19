@@ -37,15 +37,16 @@ Monorepo gồm `apps/web`, `apps/api` và `packages/shared`.
 | [S01](docs/steps/S01.md) | Khởi tạo khung dự án               | Hoàn thành |
 | [S02](docs/steps/S02.md) | Khung ứng dụng và cơ sở dữ liệu    | Hoàn thành |
 | [S03](docs/steps/S03.md) | Lược đồ sản phẩm và logic biến thể | Hoàn thành |
-| S04                      | Catalog công khai                  |            |
-| S05                      | Tài khoản và xác thực              |            |
-| S06                      | Giỏ hàng                           |            |
-| S07                      | Đặt hàng và trừ tồn kho            |            |
-| S08                      | Quản lý đơn hàng                   |            |
-| S09                      | Triển khai production              |            |
-| S10                      | Giám sát và vận hành               |            |
+| [S04](docs/steps/S04.md) | API catalog công khai              | Hoàn thành |
+| S05                      | Giao diện khách cho catalog        |            |
+| S06                      | Tài khoản và xác thực              |            |
+| S07                      | Giỏ hàng                           |            |
+| S08                      | Đặt hàng và trừ tồn kho            |            |
+| S09                      | Quản lý đơn hàng                   |            |
+| S10                      | Triển khai production              |            |
+| S11                      | Giám sát và vận hành               |            |
 
-Dự án triển khai tuần tự theo bước. Mỗi bước có tài liệu riêng, được viết chi tiết ngay trước khi thực hiện và dựa trên kết quả thực tế của bước liền trước. S07 là bước có rủi ro cao nhất do liên quan đồng thời tới tiền và tồn kho.
+Dự án triển khai tuần tự theo bước. Mỗi bước có tài liệu riêng, được viết chi tiết ngay trước khi thực hiện và dựa trên kết quả thực tế của bước liền trước. S08 là bước có rủi ro cao nhất do liên quan đồng thời tới tiền và tồn kho.
 
 ## Chạy dự án
 
