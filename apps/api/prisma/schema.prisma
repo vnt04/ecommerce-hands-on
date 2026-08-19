@@ -1,0 +1,20 @@
+// Lược đồ dữ liệu của ShopFlow.
+//
+// Quy ước đã chốt ở S02, xem docs/decisions/:
+//   - Khoá chính BIGSERIAL tự tăng, chỉ dùng nội bộ (ADR-001)
+//   - Thực thể lộ ra URL có định danh công khai riêng (ADR-002)
+//   - Tiền lưu BIGINT, đơn vị đồng (ADR-003)
+//   - Thời gian lưu timestamptz (ADR-004)
+//
+// Bước S02 cố ý chưa khai báo bảng nghiệp vụ nào. Bảng đầu tiên xuất hiện ở S03
+// cùng với domain sản phẩm.
+
+generator client {
+      provider = "prisma-client-js"
+}
+
+// Chuỗi kết nối không còn khai báo ở đây từ Prisma 7. Lệnh migrate đọc từ
+// prisma.config.ts, còn client lúc chạy nhận qua driver adapter.
+datasource db {
+      provider = "postgresql"
+}

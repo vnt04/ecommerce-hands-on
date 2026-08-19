@@ -28,11 +28,11 @@ export default defineConfig({
             watch: usePolling ? { usePolling: true, interval: POLLING_INTERVAL_MS } : undefined,
             proxy: {
                   // Web luôn gọi qua /api để môi trường phát triển và production cùng là
-                  // same-origin. Prefix được bỏ trước khi chuyển tiếp vì api chưa có nó.
+                  // same-origin. Không cắt tiền tố: api phục vụ ngay tại /api/v1 nên
+                  // đường dẫn được chuyển tiếp nguyên vẹn.
                   '/api': {
                         target: API_TARGET,
                         changeOrigin: true,
-                        rewrite: (path) => path.replace(/^\/api/, ''),
                   },
             },
       },

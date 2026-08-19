@@ -55,6 +55,9 @@ services:
     command: sh -c "pnpm --filter @shopflow/shared build && pnpm --filter @shopflow/api dev"
     environment:
       PORT: 3000
+      # Trong mạng nội bộ của Compose, database nằm ở hostname `db` và cổng 5432,
+      # không phụ thuộc POSTGRES_PORT vốn chỉ là cổng publish ra máy chủ.
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     ports:
       - '3000:3000'
     depends_on:

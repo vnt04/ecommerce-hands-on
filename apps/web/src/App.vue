@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { formatVnd } from '@shopflow/shared';
+import { formatVnd, type Envelope } from '@shopflow/shared';
 
-type HealthResponse = { status: string };
+type LivenessData = { status: string };
 
 const apiStatus = ref('đang kiểm tra...');
 
@@ -12,15 +12,12 @@ const sampleAmount = formatVnd(299000n);
 
 onMounted(async () => {
       try {
-            const response = await fetch('/api/healthz');
+            const response = await fetch('/api/v1/healthz');
+            const body = (await response.json()) as Envelope<LivenessData>;
 
-            if (!response.ok) {
-                  apiStatus.value = `lỗi HTTP ${response.status}`;
-                  return;
-            }
-
-            const body = (await response.json()) as HealthResponse;
-            apiStatus.value = body.status;
+            // Frontend ra quyết định dựa trên cờ success và mã lỗi, không bao giờ
+            // dựa trên nội dung message.
+            apiStatus.value = body.success ? body.data.status : body.error.code;
       } catch {
             apiStatus.value = 'không kết nối được';
       }
@@ -31,7 +28,7 @@ onMounted(async () => {
       <main>
             <h1>ShopFlow</h1>
             <dl>
-                  <dt>API /healthz</dt>
+                  <dt>API /api/v1/healthz</dt>
                   <dd>{{ apiStatus }}</dd>
 
                   <dt>shared.formatVnd(299000n)</dt>

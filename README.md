@@ -35,7 +35,7 @@ Monorepo gồm `apps/web`, `apps/api` và `packages/shared`.
 | Bước                     | Nội dung                        | Trạng thái |
 | ------------------------ | ------------------------------- | ---------- |
 | [S01](docs/steps/S01.md) | Khởi tạo khung dự án            | Hoàn thành |
-| [S02](docs/steps/S02.md) | Khung ứng dụng và cơ sở dữ liệu | Chờ chốt   |
+| [S02](docs/steps/S02.md) | Khung ứng dụng và cơ sở dữ liệu | Hoàn thành |
 | S03                      | Domain sản phẩm và biến thể     |            |
 | S04                      | Catalog công khai               |            |
 | S05                      | Tài khoản và xác thực           |            |
@@ -57,7 +57,13 @@ pnpm install              # phục vụ IDE, git hook và các lệnh chạy tr�
 docker compose up -d      # db :5432, api :3000, web :5173
 ```
 
-Mở `http://localhost:5173`. Trang hiển thị trạng thái trả về từ `/api/healthz` và một số tiền định dạng bởi `@shopflow/shared`.
+Áp dụng migration lần đầu:
+
+```bash
+docker compose exec api sh -c "cd apps/api && pnpm exec prisma migrate deploy"
+```
+
+Mở `http://localhost:5173`. Trang hiển thị trạng thái trả về từ `/api/v1/healthz` và một số tiền định dạng bởi `@shopflow/shared`.
 
 Lấy `DOCKER_UID` và `DOCKER_GID` bằng `id -u` và `id -g`. Nếu bỏ qua bước này trên Linux hoặc WSL, tệp do container tạo ra sẽ không sửa được từ máy chủ. Trên macOS và Windows dùng Docker Desktop thì không cần quan tâm.
 
@@ -65,18 +71,42 @@ Hot reload không hoạt động trên macOS hoặc Windows thì đặt `WATCH_P
 
 ### Lệnh
 
-| Lệnh                         | Tác dụng                                     |
-| ---------------------------- | -------------------------------------------- |
-| `docker compose up -d`       | Khởi động database, api và web               |
-| `docker compose logs -f api` | Xem log một service                          |
-| `docker compose down`        | Dừng. Thêm `-v` để xoá luôn dữ liệu database |
-| `pnpm lint`                  | ESLint toàn bộ workspace                     |
-| `pnpm typecheck`             | Kiểm tra kiểu                                |
-| `pnpm test`                  | Chạy toàn bộ test                            |
-| `pnpm build`                 | Build cả ba package                          |
-| `pnpm format:write`          | Định dạng lại mã nguồn bằng Prettier         |
+| Lệnh                         | Tác dụng                                                       |
+| ---------------------------- | -------------------------------------------------------------- |
+| `docker compose up -d`       | Khởi động database, api và web                                 |
+| `docker compose logs -f api` | Xem log một service                                            |
+| `docker compose down`        | Dừng. Thêm `-v` để xoá luôn dữ liệu database                   |
+| `docker compose build`       | Dựng lại image. **Chạy cho cả ba service**, xem lưu ý bên dưới |
+| `pnpm lint`                  | ESLint toàn bộ workspace                                       |
+| `pnpm typecheck`             | Kiểm tra kiểu                                                  |
+| `pnpm test`                  | Chạy toàn bộ test                                              |
+| `pnpm build`                 | Build cả ba package                                            |
+| `pnpm format:write`          | Định dạng lại mã nguồn bằng Prettier                           |
 
 Chạy `pnpm build` hoặc `pnpm typecheck` lần đầu trên máy sạch cần `@shopflow/shared` được biên dịch trước: `pnpm --filter @shopflow/shared build`.
+
+### Sau khi thêm hoặc gỡ dependency
+
+Thư mục `node_modules` trong container là named volume, mà Docker chỉ nạp nội dung từ image
+khi volume còn rỗng. Dựng lại image thôi là chưa đủ, phải xoá volume:
+
+```bash
+docker compose down -v
+docker compose build      # cả ba service, vì chúng dùng chung volume node_modules
+docker compose up -d
+```
+
+Bỏ qua bước này thì container vẫn chạy với bộ dependency cũ và báo lỗi không tìm thấy module.
+
+### Endpoint kiểm tra
+
+| Đường dẫn         | Kiểm tra gì                                    | Dùng cho          |
+| ----------------- | ---------------------------------------------- | ----------------- |
+| `/api/v1/healthz` | Tiến trình còn phản hồi. Không chạm database   | Kiểm tra sống     |
+| `/api/v1/readyz`  | Có phục vụ được không, gồm cả kết nối database | Kiểm tra sẵn sàng |
+
+Hai endpoint tách biệt có chủ đích: nếu kiểm tra sống phụ thuộc database thì một sự cố
+database sẽ khiến bộ điều phối khởi động lại container liên tục trong khi ứng dụng vẫn khoẻ.
 
 ### Quy ước commit
 
@@ -91,8 +121,9 @@ Hook trước khi commit chạy ESLint, Prettier và quét secret trên các t�
 
 ## Tài liệu
 
-| Nội dung                                   | Vị trí                         |
-| ------------------------------------------ | ------------------------------ |
-| Hướng dẫn cho AI làm việc trong repository | [CLAUDE.md](CLAUDE.md)         |
-| Bước đang thực hiện                        | [docs/steps/](docs/steps/)     |
-| Tài liệu đã ngừng sử dụng, giữ để tra cứu  | [docs/archive/](docs/archive/) |
+| Nội dung                                   | Vị trí                             |
+| ------------------------------------------ | ---------------------------------- |
+| Hướng dẫn cho AI làm việc trong repository | [CLAUDE.md](CLAUDE.md)             |
+| Bước đang thực hiện                        | [docs/steps/](docs/steps/)         |
+| Quyết định kiến trúc và lý do              | [docs/decisions/](docs/decisions/) |
+| Tài liệu đã ngừng sử dụng, giữ để tra cứu  | [docs/archive/](docs/archive/)     |

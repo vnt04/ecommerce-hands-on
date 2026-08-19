@@ -12,6 +12,13 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
+
+    env:
+      # prisma.config.ts đọc DATABASE_URL khi nạp, kể cả với lệnh generate vốn
+      # không kết nối database. CI không có tệp .env nên cấp một giá trị giả ở đây.
+      # Không có database nào được liên hệ trong toàn bộ workflow này.
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+
     steps:
       - uses: actions/checkout@v7
 
