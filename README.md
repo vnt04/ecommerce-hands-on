@@ -35,7 +35,7 @@ Monorepo gồm `apps/web`, `apps/api` và `packages/shared`.
 | Bước                     | Nội dung                        | Trạng thái |
 | ------------------------ | ------------------------------- | ---------- |
 | [S01](docs/steps/S01.md) | Khởi tạo khung dự án            | Hoàn thành |
-| S02                      | Khung ứng dụng và cơ sở dữ liệu |            |
+| [S02](docs/steps/S02.md) | Khung ứng dụng và cơ sở dữ liệu | Chờ chốt   |
 | S03                      | Domain sản phẩm và biến thể     |            |
 | S04                      | Catalog công khai               |            |
 | S05                      | Tài khoản và xác thực           |            |
