@@ -32,18 +32,18 @@ Monorepo gồm `apps/web`, `apps/api` và `packages/shared`.
 
 ## Lộ trình
 
-| Bước                     | Nội dung                        | Trạng thái |
-| ------------------------ | ------------------------------- | ---------- |
-| [S01](docs/steps/S01.md) | Khởi tạo khung dự án            | Hoàn thành |
-| [S02](docs/steps/S02.md) | Khung ứng dụng và cơ sở dữ liệu | Hoàn thành |
-| S03                      | Domain sản phẩm và biến thể     |            |
-| S04                      | Catalog công khai               |            |
-| S05                      | Tài khoản và xác thực           |            |
-| S06                      | Giỏ hàng                        |            |
-| S07                      | Đặt hàng và trừ tồn kho         |            |
-| S08                      | Quản lý đơn hàng                |            |
-| S09                      | Triển khai production           |            |
-| S10                      | Giám sát và vận hành            |            |
+| Bước                     | Nội dung                           | Trạng thái |
+| ------------------------ | ---------------------------------- | ---------- |
+| [S01](docs/steps/S01.md) | Khởi tạo khung dự án               | Hoàn thành |
+| [S02](docs/steps/S02.md) | Khung ứng dụng và cơ sở dữ liệu    | Hoàn thành |
+| [S03](docs/steps/S03.md) | Lược đồ sản phẩm và logic biến thể | Hoàn thành |
+| S04                      | Catalog công khai                  |            |
+| S05                      | Tài khoản và xác thực              |            |
+| S06                      | Giỏ hàng                           |            |
+| S07                      | Đặt hàng và trừ tồn kho            |            |
+| S08                      | Quản lý đơn hàng                   |            |
+| S09                      | Triển khai production              |            |
+| S10                      | Giám sát và vận hành               |            |
 
 Dự án triển khai tuần tự theo bước. Mỗi bước có tài liệu riêng, được viết chi tiết ngay trước khi thực hiện và dựa trên kết quả thực tế của bước liền trước. S07 là bước có rủi ro cao nhất do liên quan đồng thời tới tiền và tồn kho.
 
@@ -57,11 +57,15 @@ pnpm install              # phục vụ IDE, git hook và các lệnh chạy tr�
 docker compose up -d      # db :5432, api :3000, web :5173
 ```
 
-Áp dụng migration lần đầu:
+Áp dụng migration và nạp dữ liệu mẫu:
 
 ```bash
 docker compose exec api sh -c "cd apps/api && pnpm exec prisma migrate deploy"
+docker compose exec api sh -c "cd apps/api && pnpm build && pnpm exec prisma db seed"
 ```
+
+Dữ liệu mẫu gồm hai thiết kế, mỗi thiết kế ba màu × năm size. Cố ý có một tổ hợp bị tắt và một
+SKU hết hàng: dữ liệu quá sạch che mất đúng những trạng thái hay hỏng nhất.
 
 Mở `http://localhost:5173`. Trang hiển thị trạng thái trả về từ `/api/v1/healthz` và một số tiền định dạng bởi `@shopflow/shared`.
 

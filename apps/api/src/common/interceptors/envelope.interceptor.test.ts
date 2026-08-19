@@ -1,0 +1,27 @@
+import type { CallHandler, ExecutionContext } from '@nestjs/common';
+import { of } from 'rxjs';
+import { describe, expect, test } from 'vitest';
+
+import { EnvelopeInterceptor } from './envelope.interceptor.js';
+
+function runInterceptor<T>(value: T): Promise<unknown> {
+      const next = { handle: () => of(value) } as CallHandler<T>;
+
+      return new Promise((resolve) => {
+            new EnvelopeInterceptor<T>().intercept({} as ExecutionContext, next).subscribe(resolve);
+      });
+}
+
+describe('EnvelopeInterceptor', () => {
+      test('bọc dữ liệu vào envelope thành công', async () => {
+            await expect(runInterceptor({ status: 'ok' })).resolves.toEqual({ success: true, data: { status: 'ok' } });
+      });
+
+      test('bọc cả mảng mà không làm phẳng', async () => {
+            await expect(runInterceptor([1, 2])).resolves.toEqual({ success: true, data: [1, 2] });
+      });
+
+      test('bọc cả giá trị rỗng để hình dạng response luôn nhất quán', async () => {
+            await expect(runInterceptor(undefined)).resolves.toEqual({ success: true, data: undefined });
+      });
+});

@@ -42,4 +42,10 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+
+      # Test tích hợp dựng PostgreSQL thật bằng Testcontainers. Runner của GitHub
+      # đã có sẵn Docker nên không cần service container khai báo riêng.
+      - name: Integration tests
+        run: pnpm --filter @shopflow/api test:int
+
       - run: pnpm build

@@ -15,3 +15,5 @@ lại sẽ sống mãi kể cả khi đã sai.
 | [ADR-002](ADR-002-dinh-danh-cong-khai.md)     | Thực thể lộ ra URL có định danh công khai riêng     | Accepted   | S02  |
 | [ADR-003](ADR-003-luu-tien-bang-so-nguyen.md) | Tiền lưu số nguyên đơn vị đồng, JSON dạng chuỗi     | Accepted   | S02  |
 | [ADR-004](ADR-004-thoi-gian-timestamptz.md)   | Thời gian lưu `timestamptz`, nghiệp vụ giờ Việt Nam | Accepted   | S02  |
+| [ADR-005](ADR-005-mo-hinh-bien-the.md)        | Biến thể là màu × size, mỗi chiều một bảng tra cứu  | Accepted   | S03  |
+| [ADR-006](ADR-006-sku-sinh-tu-ma-thiet-ke.md) | SKU sinh từ mã thiết kế, không từ tên sản phẩm      | Accepted   | S03  |

@@ -23,5 +23,8 @@ export default defineConfig({
       },
       migrations: {
             path: 'prisma/migrations',
+            // Seed chạy từ mã đã biên dịch để dùng lại logic sinh ma trận trong src,
+            // thay vì chép lại logic đó một lần nữa trong một tệp script riêng.
+            seed: 'node dist/prisma/seed.js',
       },
 });
