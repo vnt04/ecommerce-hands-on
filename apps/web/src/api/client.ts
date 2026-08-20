@@ -161,6 +161,16 @@ export function apiDelete<T>(path: string): Promise<ApiResult<T>> {
       return request<T>(path, { method: 'DELETE' });
 }
 
+/**
+ * Gửi một biểu mẫu nhiều phần, dùng để tải tệp lên.
+ *
+ * Không đặt `Content-Type`: trình duyệt phải tự sinh header đó kèm chuỗi phân
+ * cách. Đặt tay là hỏng, và triệu chứng là máy chủ báo không tìm thấy tệp nào.
+ */
+export function apiUpload<T>(path: string, form: FormData): Promise<ApiResult<T>> {
+      return request<T>(path, { method: 'POST', body: form });
+}
+
 function sendJson<T>(method: string, path: string, body?: unknown, headers: Record<string, string> = {}): Promise<ApiResult<T>> {
       return request<T>(path, {
             method,

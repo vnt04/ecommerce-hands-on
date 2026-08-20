@@ -49,9 +49,10 @@ onMounted(() => {
                               </RouterLink>
 
                               <template v-if="session.user">
-                                    <RouterLink v-if="session.user.role === 'ADMIN'" to="/quan-tri/don-hang" class="hover:underline">
-                                          Quản trị
-                                    </RouterLink>
+                                    <template v-if="session.user.role === 'ADMIN'">
+                                          <RouterLink to="/quan-tri/don-hang" class="hover:underline">Đơn (QT)</RouterLink>
+                                          <RouterLink to="/quan-tri/thiet-ke" class="hover:underline">Thiết kế</RouterLink>
+                                    </template>
                                     <RouterLink to="/don-hang" class="hover:underline">Đơn hàng</RouterLink>
                                     <span>{{ session.user.fullName }}</span>
                                     <button type="button" class="hover:underline" @click="session.logout()">Đăng xuất</button>

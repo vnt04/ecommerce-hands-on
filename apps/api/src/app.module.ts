@@ -12,6 +12,7 @@ import { JwtAuthGuard, RolesGuard } from './modules/auth/auth.guards.js';
 import { CartModule } from './modules/cart/cart.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
+import { StorageModule } from './modules/storage/storage.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RedisModule } from './redis/redis.module.js';
 
@@ -63,6 +64,7 @@ const GLOBAL_RATE_LIMIT = 100;
 
             PrismaModule,
             RedisModule,
+            StorageModule,
             AuthModule,
             CatalogModule,
             CartModule,

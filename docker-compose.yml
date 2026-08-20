@@ -52,6 +52,25 @@ services:
       timeout: 3s
       retries: 10
 
+  # Kho ảnh nói giao thức S3. Ở production đây là S3 thật; chỉ khác điểm cuối và
+  # thông tin xác thực, còn mã trong apps/api không đổi một dòng nào.
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - '${MINIO_PORT}:9000'
+      - '${MINIO_CONSOLE_PORT}:9001'
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   # Biên dịch packages/shared ở chế độ theo dõi. api và web đọc kết quả
   # qua thư mục dist nằm trên bind mount, nên chỉ cần một tiến trình biên dịch.
   shared:
@@ -70,12 +89,23 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET}
+      # Điểm cuối nội bộ để api ghi ảnh lên. Trình duyệt không dùng địa chỉ này.
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: ${S3_REGION}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      # Đường dẫn trình duyệt dùng để tải ảnh về. Khác điểm cuối bên trên vì
+      # hostname `minio` chỉ phân giải được trong mạng nội bộ của Compose.
+      S3_PUBLIC_URL: http://localhost:${MINIO_PORT}
     ports:
       - '${API_PORT}:3000'
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
   web:
@@ -92,6 +122,7 @@ services:
 
 volumes:
   db-data:
+  minio-data:
   node-modules-root:
   node-modules-shared:
   node-modules-api:

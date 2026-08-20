@@ -33,3 +33,13 @@ export type {
       PaymentStatus,
       ShippingInfo,
 } from './order.js';
+
+export type {
+      AdminProductDetail,
+      AdminProductImage,
+      AdminProductSummary,
+      AdminVariant,
+      CatalogAxes,
+      ProductStatus,
+      VariantChangeEntry,
+} from './admin-catalog.js';

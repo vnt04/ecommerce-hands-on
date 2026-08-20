@@ -31,6 +31,24 @@ const envSchema = z.object({
        * không lọt lên môi trường thật: khoá ngắn thì chữ ký đoán được.
        */
       JWT_SECRET: z.string().min(MIN_JWT_SECRET_LENGTH, 'JWT_SECRET phải dài ít nhất ' + MIN_JWT_SECRET_LENGTH + ' ký tự'),
+
+      /**
+       * Kho ảnh nói giao thức S3. Ở môi trường phát triển đây là MinIO, ở production
+       * là S3 thật — chỉ khác điểm cuối và cặp khoá, mã không đổi.
+       *
+       * S3_ENDPOINT rỗng nghĩa là dùng điểm cuối mặc định của AWS theo vùng.
+       */
+      S3_ENDPOINT: z.string().url().optional(),
+      S3_REGION: z.string().min(1),
+      S3_BUCKET: z.string().min(1),
+      S3_ACCESS_KEY_ID: z.string().min(1),
+      S3_SECRET_ACCESS_KEY: z.string().min(1),
+
+      /**
+       * Địa chỉ trình duyệt dùng để tải ảnh về. Khác S3_ENDPOINT vì hostname nội bộ
+       * của Compose không phân giải được từ máy khách.
+       */
+      S3_PUBLIC_URL: z.string().url(),
 });
 
 export type Env = z.infer<typeof envSchema>;

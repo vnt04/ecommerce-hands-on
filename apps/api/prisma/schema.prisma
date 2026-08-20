@@ -170,11 +170,12 @@ model ProductVariant {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  product    Product     @relation(fields: [productId], references: [id])
-  color      Color       @relation(fields: [colorId], references: [id])
-  size       Size        @relation(fields: [sizeId], references: [id])
+  product    Product         @relation(fields: [productId], references: [id])
+  color      Color           @relation(fields: [colorId], references: [id])
+  size       Size            @relation(fields: [sizeId], references: [id])
   cartItems  CartItem[]
   orderItems OrderItem[]
+  changes    VariantChange[]
 
   @@unique([productId, colorId, sizeId])
   @@index([productId])
@@ -228,6 +229,7 @@ model User {
   cart                 Cart?
   orders               Order[]
   orderStatusHistories OrderStatusHistory[]
+  variantChanges       VariantChange[]
 
   @@map("users")
 }
@@ -448,4 +450,38 @@ model OrderStatusHistory {
 
   @@index([orderId, createdAt])
   @@map("order_status_history")
+}
+
+/// Lịch sử thay đổi giá và tồn kho của một biến thể. Chỉ ghi thêm, không sửa đè.
+///
+/// Trả lời câu hỏi "tồn kho lệch là do đơn hàng, do nhập tay, hay do lỗi trong mã".
+/// Không có bảng này thì một lần lệch không có cách nào truy ngược.
+///
+/// Mỗi dòng ghi đúng một loại thay đổi, do ràng buộc CHECK trong migration bảo đảm.
+model VariantChange {
+  id        BigInt @id @default(autoincrement())
+  variantId BigInt @map("variant_id")
+
+  /// Đơn vị đồng, số nguyên (ADR-003). Rỗng nếu dòng này ghi thay đổi tồn kho.
+  priceFrom BigInt? @map("price_from")
+  priceTo   BigInt? @map("price_to")
+
+  /// Lượng cộng thêm, âm nghĩa là điều chỉnh giảm. Rỗng nếu dòng này ghi thay đổi giá.
+  stockDelta Int? @map("stock_delta")
+  /// Tồn kho ngay sau thao tác, chép lại để đọc lịch sử không phải cộng dồn từ đầu.
+  stockAfter Int? @map("stock_after")
+
+  /// Lý do do người thực hiện nhập, ví dụ "Nhập hàng đợt 3" hoặc "Kiểm kho phát hiện thiếu".
+  reason String?
+
+  /// Rỗng nếu do hệ thống. Giữ được cả khi tài khoản bị xoá (ràng buộc R8).
+  changedById BigInt? @map("changed_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  changedBy User?          @relation(fields: [changedById], references: [id])
+
+  @@index([variantId, createdAt])
+  @@map("variant_changes")
 }

@@ -32,20 +32,20 @@ Monorepo gồm `apps/web`, `apps/api` và `packages/shared`.
 
 ## Lộ trình
 
-| Bước                     | Nội dung                           | Trạng thái |
-| ------------------------ | ---------------------------------- | ---------- |
-| [S01](docs/steps/S01.md) | Khởi tạo khung dự án               | Hoàn thành |
-| [S02](docs/steps/S02.md) | Khung ứng dụng và cơ sở dữ liệu    | Hoàn thành |
-| [S03](docs/steps/S03.md) | Lược đồ sản phẩm và logic biến thể | Hoàn thành |
-| [S04](docs/steps/S04.md) | API catalog công khai              | Hoàn thành |
-| [S05](docs/steps/S05.md) | Giao diện khách cho catalog        | Hoàn thành |
-| [S06](docs/steps/S06.md) | Tài khoản và xác thực              | Hoàn thành |
-| [S07](docs/steps/S07.md) | Giỏ hàng                           | Hoàn thành |
-| [S08](docs/steps/S08.md) | Đặt hàng và trừ tồn kho            | Hoàn thành |
-| [S09](docs/steps/S09.md) | Quản lý đơn hàng                   | Hoàn thành |
-| S09b                     | Quản trị sản phẩm và tồn kho       |            |
-| S10                      | Triển khai production              |            |
-| S11                      | Giám sát và vận hành               |            |
+| Bước                       | Nội dung                           | Trạng thái |
+| -------------------------- | ---------------------------------- | ---------- |
+| [S01](docs/steps/S01.md)   | Khởi tạo khung dự án               | Hoàn thành |
+| [S02](docs/steps/S02.md)   | Khung ứng dụng và cơ sở dữ liệu    | Hoàn thành |
+| [S03](docs/steps/S03.md)   | Lược đồ sản phẩm và logic biến thể | Hoàn thành |
+| [S04](docs/steps/S04.md)   | API catalog công khai              | Hoàn thành |
+| [S05](docs/steps/S05.md)   | Giao diện khách cho catalog        | Hoàn thành |
+| [S06](docs/steps/S06.md)   | Tài khoản và xác thực              | Hoàn thành |
+| [S07](docs/steps/S07.md)   | Giỏ hàng                           | Hoàn thành |
+| [S08](docs/steps/S08.md)   | Đặt hàng và trừ tồn kho            | Hoàn thành |
+| [S09](docs/steps/S09.md)   | Quản lý đơn hàng                   | Hoàn thành |
+| [S09b](docs/steps/S09b.md) | Quản trị sản phẩm và tồn kho       | Hoàn thành |
+| S10                        | Triển khai production              |            |
+| S11                        | Giám sát và vận hành               |            |
 
 Dự án triển khai tuần tự theo bước. Mỗi bước có tài liệu riêng, được viết chi tiết ngay trước khi thực hiện và dựa trên kết quả thực tế của bước liền trước. S08 là bước có rủi ro cao nhất do liên quan đồng thời tới tiền và tồn kho.
 
@@ -119,6 +119,15 @@ Bỏ qua bước này thì container vẫn chạy với bộ dependency cũ và 
 | ----------------- | ---------------------------------------------- | ----------------- |
 | `/api/v1/healthz` | Tiến trình còn phản hồi. Không chạm database   | Kiểm tra sống     |
 | `/api/v1/readyz`  | Có phục vụ được không, gồm cả kết nối database | Kiểm tra sẵn sàng |
+
+### Kho ảnh
+
+Ảnh sản phẩm nằm trên MinIO, một kho nói giao thức S3. Bảng điều khiển của nó ở
+`http://localhost:${MINIO_CONSOLE_PORT}`, đăng nhập bằng `MINIO_ROOT_USER` và `MINIO_ROOT_PASSWORD`
+trong `.env`.
+
+Ở production kho này là S3 thật. Mã trong `apps/api` không đổi: chỉ đổi `S3_ENDPOINT`, `S3_REGION`,
+cặp khoá và `S3_PUBLIC_URL`.
 
 Hai endpoint tách biệt có chủ đích: nếu kiểm tra sống phụ thuộc database thì một sự cố
 database sẽ khiến bộ điều phối khởi động lại container liên tục trong khi ứng dụng vẫn khoẻ.

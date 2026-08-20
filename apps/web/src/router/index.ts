@@ -52,6 +52,25 @@ const routes: RouteRecordRaw[] = [
             meta: { requiresAdmin: true },
       },
       {
+            path: '/quan-tri/thiet-ke',
+            name: 'admin-products',
+            component: () => import('../pages/admin/AdminProductListPage.vue'),
+            meta: { requiresAdmin: true },
+      },
+      {
+            path: '/quan-tri/thiet-ke/tao-moi',
+            name: 'admin-product-create',
+            component: () => import('../pages/admin/AdminProductCreatePage.vue'),
+            meta: { requiresAdmin: true },
+      },
+      {
+            path: '/quan-tri/thiet-ke/:slug',
+            name: 'admin-product-detail',
+            component: () => import('../pages/admin/AdminProductDetailPage.vue'),
+            props: true,
+            meta: { requiresAdmin: true },
+      },
+      {
             path: '/dang-nhap',
             name: 'login',
             component: () => import('../pages/LoginPage.vue'),
