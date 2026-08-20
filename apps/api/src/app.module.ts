@@ -9,6 +9,7 @@ import { loadEnv } from './config/env.js';
 import { HealthController } from './health/health.controller.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { JwtAuthGuard, RolesGuard } from './modules/auth/auth.guards.js';
+import { CartModule } from './modules/cart/cart.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RedisModule } from './redis/redis.module.js';
@@ -63,6 +64,7 @@ const GLOBAL_RATE_LIMIT = 100;
             RedisModule,
             AuthModule,
             CatalogModule,
+            CartModule,
       ],
       controllers: [HealthController],
       providers: [

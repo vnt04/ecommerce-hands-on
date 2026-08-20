@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue';
 
 import { fetchProduct } from '../api/catalog.js';
 import QueryState from '../components/QueryState.vue';
+import { useCart } from '../composables/useCart.js';
 
 const props = defineProps<{ slug: string }>();
 
@@ -58,6 +59,27 @@ const displayPrice = computed(() => {
 
       return prices.length === 0 ? '' : formatVndFromJson(prices.reduce((min, price) => (price < min ? price : min)).toString());
 });
+
+const { addItem, notice, isMutating } = useCart();
+
+/** Đã thêm thành công lần gần nhất, để hiện xác nhận ngay cạnh nút. */
+const justAdded = ref(false);
+
+// Đổi màu hoặc size là bắt đầu một lựa chọn khác, nên xác nhận cũ không còn đúng.
+watch([selectedColorCode, selectedSizeName], () => {
+      justAdded.value = false;
+});
+
+async function addSelectionToCart(): Promise<void> {
+      const variant = selectedVariant.value;
+
+      if (variant === undefined) {
+            return;
+      }
+
+      await addItem(variant.sku, 1);
+      justAdded.value = true;
+}
 
 const sizeChartRows = computed(() => {
       const measurements = product.value?.sizeChart?.measurements;
@@ -134,6 +156,26 @@ const sizeChartRows = computed(() => {
                                           </button>
                                     </div>
                               </fieldset>
+
+                              <!--
+                                    Nút chỉ mở khi đã chọn đủ màu và size. Cho bấm khi chưa chọn
+                                    rồi báo lỗi là bắt khách đoán xem còn thiếu gì.
+                              -->
+                              <button
+                                    type="button"
+                                    class="mt-6 w-full rounded bg-brand py-3 font-semibold text-white disabled:cursor-not-allowed disabled:bg-gray-300"
+                                    :disabled="!selectedVariant || isMutating"
+                                    @click="addSelectionToCart()"
+                              >
+                                    {{ isMutating ? 'Đang thêm…' : 'Thêm vào giỏ' }}
+                              </button>
+
+                              <p v-if="!selectedSizeName" class="mt-2 text-sm text-gray-500">Chọn size để thêm vào giỏ.</p>
+                              <p v-else-if="notice" class="mt-2 text-sm text-amber-700" role="status">{{ notice }}</p>
+                              <p v-else-if="justAdded" class="mt-2 text-sm text-green-700" role="status">
+                                    Đã thêm vào giỏ.
+                                    <RouterLink to="/gio-hang" class="underline">Xem giỏ hàng</RouterLink>
+                              </p>
 
                               <dl class="mt-8 text-sm">
                                     <template v-if="product.material">

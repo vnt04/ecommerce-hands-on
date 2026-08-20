@@ -15,3 +15,5 @@ export type {
       ProductVariantSummary,
       SizeSummary,
 } from './catalog.js';
+
+export type { CartLine, CartMutationResult, CartView } from './cart.js';

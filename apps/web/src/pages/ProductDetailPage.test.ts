@@ -6,10 +6,21 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import ProductDetailPage from './ProductDetailPage.vue';
 
 const fetchProduct = vi.fn();
+const fetchCart = vi.fn();
+const addCartItem = vi.fn();
 
 vi.mock('../api/catalog.js', () => ({
       fetchProduct: (slug: string) => fetchProduct(slug),
 }));
+
+vi.mock('../api/cart.js', () => ({
+      fetchCart: () => fetchCart(),
+      addCartItem: (sku: string, quantity: number) => addCartItem(sku, quantity),
+      updateCartItem: vi.fn(),
+      removeCartItem: vi.fn(),
+}));
+
+const EMPTY_CART = { lines: [], subtotal: '0', itemCount: 0 };
 
 const DETAIL: ProductDetail = {
       slug: 'tee-sunset',
@@ -53,8 +64,22 @@ async function mountPage() {
 }
 
 beforeEach(() => {
+      vi.clearAllMocks();
       fetchProduct.mockResolvedValue({ data: DETAIL });
+      fetchCart.mockResolvedValue(EMPTY_CART);
+      addCartItem.mockResolvedValue({ cart: EMPTY_CART });
 });
+
+function findAddButton(wrapper: Awaited<ReturnType<typeof mountPage>>) {
+      return wrapper.findAll('button').find((button) => button.text().startsWith('Thêm vào giỏ'));
+}
+
+async function selectSize(wrapper: Awaited<ReturnType<typeof mountPage>>, name: string): Promise<void> {
+      await wrapper
+            .findAll('button')
+            .find((button) => button.text() === name)
+            ?.trigger('click');
+}
 
 describe('ProductDetailPage', () => {
       test('size hết hàng bị vô hiệu hoá chứ không bị ẩn', async () => {
@@ -106,6 +131,49 @@ describe('ProductDetailPage', () => {
             const sizeL = wrapper.findAll('button').find((button) => button.text() === 'L');
 
             expect(sizeL?.attributes('disabled')).toBeDefined();
+      });
+
+      test('chưa chọn size thì nút thêm vào giỏ bị vô hiệu hoá', async () => {
+            const wrapper = await mountPage();
+
+            expect(findAddButton(wrapper)?.attributes('disabled')).toBeDefined();
+            expect(wrapper.text()).toContain('Chọn size để thêm vào giỏ');
+      });
+
+      test('chọn size rồi thêm vào giỏ thì gửi đúng SKU của tổ hợp đang chọn', async () => {
+            const wrapper = await mountPage();
+
+            await selectSize(wrapper, 'L');
+            await findAddButton(wrapper)?.trigger('click');
+            await flushPromises();
+
+            expect(addCartItem).toHaveBeenCalledWith('TEE-SUNSET-BLK-L', 1);
+            expect(wrapper.text()).toContain('Đã thêm vào giỏ');
+      });
+
+      test('đổi màu sau khi thêm thì xác nhận cũ biến mất', async () => {
+            const wrapper = await mountPage();
+
+            await selectSize(wrapper, 'S');
+            await findAddButton(wrapper)?.trigger('click');
+            await flushPromises();
+
+            const whiteSwatch = wrapper.findAll('button').find((button) => button.attributes('aria-label') === 'Trắng');
+            await whiteSwatch?.trigger('click');
+
+            expect(wrapper.text()).not.toContain('Đã thêm vào giỏ');
+      });
+
+      test('số lượng bị chặn theo tồn thì hiện thông báo thay vì xác nhận suông', async () => {
+            addCartItem.mockResolvedValue({ cart: EMPTY_CART, adjustedQuantity: 2 });
+
+            const wrapper = await mountPage();
+
+            await selectSize(wrapper, 'L');
+            await findAddButton(wrapper)?.trigger('click');
+            await flushPromises();
+
+            expect(wrapper.text()).toContain('Kho chỉ còn 2 sản phẩm');
       });
 
       test('hiển thị trạng thái lỗi thay vì trang trắng khi API hỏng', async () => {

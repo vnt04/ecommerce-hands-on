@@ -40,7 +40,7 @@ Monorepo gồm `apps/web`, `apps/api` và `packages/shared`.
 | [S04](docs/steps/S04.md) | API catalog công khai              | Hoàn thành |
 | [S05](docs/steps/S05.md) | Giao diện khách cho catalog        | Hoàn thành |
 | [S06](docs/steps/S06.md) | Tài khoản và xác thực              | Hoàn thành |
-| S07                      | Giỏ hàng                           |            |
+| [S07](docs/steps/S07.md) | Giỏ hàng                           | Hoàn thành |
 | S08                      | Đặt hàng và trừ tồn kho            |            |
 | S09                      | Quản lý đơn hàng                   |            |
 | S10                      | Triển khai production              |            |

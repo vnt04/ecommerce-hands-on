@@ -13,6 +13,11 @@ const routes: RouteRecordRaw[] = [
             props: true,
       },
       {
+            path: '/gio-hang',
+            name: 'cart',
+            component: () => import('../pages/CartPage.vue'),
+      },
+      {
             path: '/dang-nhap',
             name: 'login',
             component: () => import('../pages/LoginPage.vue'),

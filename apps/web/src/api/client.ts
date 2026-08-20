@@ -148,8 +148,20 @@ export function apiGet<T>(path: string, params: QueryParams = {}): Promise<ApiRe
 }
 
 export function apiPost<T>(path: string, body?: unknown): Promise<ApiResult<T>> {
+      return sendJson<T>('POST', path, body);
+}
+
+export function apiPatch<T>(path: string, body?: unknown): Promise<ApiResult<T>> {
+      return sendJson<T>('PATCH', path, body);
+}
+
+export function apiDelete<T>(path: string): Promise<ApiResult<T>> {
+      return request<T>(path, { method: 'DELETE' });
+}
+
+function sendJson<T>(method: string, path: string, body?: unknown): Promise<ApiResult<T>> {
       return request<T>(path, {
-            method: 'POST',
+            method,
             headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
             body: body === undefined ? undefined : JSON.stringify(body),
       });

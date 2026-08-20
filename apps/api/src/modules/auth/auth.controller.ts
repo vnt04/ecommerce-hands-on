@@ -3,11 +3,13 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
+import { CartService } from '../cart/cart.service.js';
 import { CurrentUser, Public } from './auth.decorators.js';
 import { AuthService, type AuthenticatedUser, type SessionTokens } from './auth.service.js';
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from './dto/auth.schema.js';
 
 const REFRESH_COOKIE = 'refresh_token';
+const CART_COOKIE = 'cart_token';
 
 /** Giới hạn chặt cho các endpoint dò được: năm lần mỗi phút cho mỗi địa chỉ. */
 const AUTH_RATE_LIMIT = { default: { limit: 5, ttl: 60_000 } };
@@ -22,18 +24,23 @@ function toPublicUser(user: AuthenticatedUser): PublicUser {
 
 @Controller('auth')
 export class AuthController {
-      constructor(private readonly auth: AuthService) {}
+      constructor(
+            private readonly auth: AuthService,
+            private readonly carts: CartService,
+      ) {}
 
       @Public()
       @Throttle(AUTH_RATE_LIMIT)
       @Post('register')
       async register(
             @Body(new ZodValidationPipe(registerSchema)) input: RegisterInput,
+            @Req() request: Request,
             @Res({ passthrough: true }) response: Response,
       ): Promise<SessionResponse> {
             const user = await this.auth.register(input);
             const tokens = await this.auth.startSession(user);
 
+            await this.mergeGuestCart(request, response, user.id);
             this.setRefreshCookie(response, tokens);
 
             return { accessToken: tokens.accessToken, user: toPublicUser(user) };
@@ -45,11 +52,13 @@ export class AuthController {
       @HttpCode(HttpStatus.OK)
       async login(
             @Body(new ZodValidationPipe(loginSchema)) input: LoginInput,
+            @Req() request: Request,
             @Res({ passthrough: true }) response: Response,
       ): Promise<SessionResponse> {
             const user = await this.auth.validateCredentials(input.email, input.password);
             const tokens = await this.auth.startSession(user);
 
+            await this.mergeGuestCart(request, response, user.id);
             this.setRefreshCookie(response, tokens);
 
             return { accessToken: tokens.accessToken, user: toPublicUser(user) };
@@ -90,6 +99,24 @@ export class AuthController {
             }
 
             return toPublicUser(fresh);
+      }
+
+      /**
+       * Gộp giỏ ẩn danh vào giỏ tài khoản ngay khi phiên hình thành.
+       *
+       * Không gộp thì khách bỏ công chọn hàng rồi đăng nhập và thấy giỏ trống —
+       * đúng thời điểm dễ bỏ đi nhất. Cookie giỏ ẩn danh bị xoá sau khi gộp để
+       * không còn hai giỏ cùng tồn tại.
+       */
+      private async mergeGuestCart(request: Request, response: Response, userId: bigint): Promise<void> {
+            const token = request.cookies?.[CART_COOKIE];
+
+            if (typeof token !== 'string' || token === '') {
+                  return;
+            }
+
+            await this.carts.mergeAnonymousCart(token, userId);
+            response.clearCookie(CART_COOKIE, { path: '/' });
       }
 
       private readRefreshCookie(request: Request): string {

@@ -57,6 +57,6 @@ export async function countQueries(prisma: TestPrismaClient, operation: () => Pr
  */
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
       await prisma.$executeRawUnsafe(
-            'TRUNCATE product_variants, product_images, products, categories, colors, sizes, size_charts RESTART IDENTITY CASCADE',
+            'TRUNCATE cart_items, carts, product_variants, product_images, products, categories, colors, sizes, size_charts RESTART IDENTITY CASCADE',
       );
 }
