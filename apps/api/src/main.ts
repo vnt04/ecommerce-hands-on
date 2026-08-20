@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module.js';
@@ -27,6 +28,9 @@ async function bootstrap(): Promise<void> {
 
       // Gắn ở tầng serialize của Express nên áp dụng cho mọi response.
       app.set('json replacer', bigIntReplacer);
+
+      // Refresh token nằm trong cookie httpOnly nên phải phân giải cookie trước.
+      app.use(cookieParser());
 
       app.useGlobalInterceptors(new EnvelopeInterceptor());
       app.useGlobalFilters(new AllExceptionsFilter());

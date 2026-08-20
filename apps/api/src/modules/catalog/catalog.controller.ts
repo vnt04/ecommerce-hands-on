@@ -2,9 +2,12 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import type { CatalogFilterOptions, ProductDetail } from '@shopflow/shared';
 
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
+import { Public } from '../auth/auth.decorators.js';
 import { CatalogQueryService, type ProductListResult } from './catalog-query.service.js';
 import { productListQuerySchema, type ProductListQuery } from './dto/product-query.schema.js';
 
+/** Catalog là dữ liệu công khai: khách chưa đăng nhập vẫn duyệt được. */
+@Public()
 @Controller()
 export class CatalogController {
       constructor(private readonly catalogQuery: CatalogQueryService) {}

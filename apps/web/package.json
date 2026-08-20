@@ -13,6 +13,7 @@
       "dependencies": {
             "@shopflow/shared": "workspace:*",
             "@tanstack/vue-query": "^5.101.4",
+            "pinia": "^4.0.3",
             "vue": "^3.5.24",
             "vue-router": "^5.2.0"
       },

@@ -1,6 +1,7 @@
 import './style.css';
 
 import { VueQueryPlugin } from '@tanstack/vue-query';
+import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 
 import App from './App.vue';
@@ -10,6 +11,7 @@ const RETRY_ATTEMPTS = 1;
 const STALE_TIME_MS = 30_000;
 
 createApp(App)
+      .use(createPinia())
       .use(router)
       .use(VueQueryPlugin, {
             queryClientConfig: {

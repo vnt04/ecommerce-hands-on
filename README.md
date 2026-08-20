@@ -39,7 +39,7 @@ Monorepo gồm `apps/web`, `apps/api` và `packages/shared`.
 | [S03](docs/steps/S03.md) | Lược đồ sản phẩm và logic biến thể | Hoàn thành |
 | [S04](docs/steps/S04.md) | API catalog công khai              | Hoàn thành |
 | [S05](docs/steps/S05.md) | Giao diện khách cho catalog        | Hoàn thành |
-| S06                      | Tài khoản và xác thực              |            |
+| [S06](docs/steps/S06.md) | Tài khoản và xác thực              | Hoàn thành |
 | S07                      | Giỏ hàng                           |            |
 | S08                      | Đặt hàng và trừ tồn kho            |            |
 | S09                      | Quản lý đơn hàng                   |            |
@@ -53,9 +53,9 @@ Dự án triển khai tuần tự theo bước. Mỗi bước có tài liệu ri
 Yêu cầu: Docker và Docker Compose. Node.js 22 trở lên trên máy chủ nếu muốn chạy lint, typecheck và test trực tiếp.
 
 ```bash
-cp .env.example .env      # điền mật khẩu database, DOCKER_UID, DOCKER_GID
+cp .env.example .env      # mật khẩu database, JWT_SECRET, DOCKER_UID, DOCKER_GID, cổng
 pnpm install              # phục vụ IDE, git hook và các lệnh chạy trực tiếp
-docker compose up -d      # db :5432, api :3000, web :5173
+docker compose up -d      # db, redis, api, web — cổng publish lấy từ .env
 ```
 
 Áp dụng migration và nạp dữ liệu mẫu:
@@ -89,6 +89,15 @@ Hot reload không hoạt động trên macOS hoặc Windows thì đặt `WATCH_P
 | `pnpm format:write`          | Định dạng lại mã nguồn bằng Prettier                           |
 
 Chạy `pnpm build` hoặc `pnpm typecheck` lần đầu trên máy sạch cần `@shopflow/shared` được biên dịch trước: `pnpm --filter @shopflow/shared build`.
+
+### Cổng bị chiếm
+
+Cổng publish đọc từ `.env`. Máy đang chạy dự án khác giữ cùng cổng thì đổi `API_PORT`,
+`WEB_PORT`, `REDIS_PORT` hoặc `POSTGRES_PORT` — bên trong Compose các service vẫn dùng cổng
+chuẩn nên không phải sửa gì thêm.
+
+Triệu chứng khi quên đổi rất dễ gây nhầm: container vẫn chạy, nhưng mở trang lại thấy nội dung
+của ứng dụng khác.
 
 ### Sau khi thêm hoặc gỡ dependency
 

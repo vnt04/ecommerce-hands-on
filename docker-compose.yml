@@ -42,6 +42,16 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '${REDIS_PORT}:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   # Biên dịch packages/shared ở chế độ theo dõi. api và web đọc kết quả
   # qua thư mục dist nằm trên bind mount, nên chỉ cần một tiến trình biên dịch.
   shared:
@@ -58,10 +68,14 @@ services:
       # Trong mạng nội bộ của Compose, database nằm ở hostname `db` và cổng 5432,
       # không phụ thuộc POSTGRES_PORT vốn chỉ là cổng publish ra máy chủ.
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
     ports:
-      - '3000:3000'
+      - '${API_PORT}:3000'
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   web:
@@ -72,7 +86,7 @@ services:
       API_URL: http://api:3000
       WATCH_POLLING: ${WATCH_POLLING}
     ports:
-      - '5173:5173'
+      - '${WEB_PORT}:5173'
     depends_on:
       - api
 

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const DEFAULT_PORT = 3000;
+const MIN_JWT_SECRET_LENGTH = 32;
 
 /**
  * Hợp đồng về biến môi trường. Ứng dụng đọc cấu hình qua đây, không đọc thẳng
@@ -11,6 +12,7 @@ const envSchema = z.object({
       NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
       PORT: z.coerce.number().int().positive().default(DEFAULT_PORT),
       LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+
       DATABASE_URL: z
             .string()
             .min(1)
@@ -18,6 +20,17 @@ const envSchema = z.object({
                   (value) => value.startsWith('postgres://') || value.startsWith('postgresql://'),
                   'DATABASE_URL phải là chuỗi kết nối PostgreSQL',
             ),
+
+      REDIS_URL: z
+            .string()
+            .min(1)
+            .refine((value) => value.startsWith('redis://'), 'REDIS_URL phải là chuỗi kết nối Redis'),
+
+      /**
+       * Khoá ký access token. Đặt sàn độ dài để một giá trị đặt tạm lúc thử nghiệm
+       * không lọt lên môi trường thật: khoá ngắn thì chữ ký đoán được.
+       */
+      JWT_SECRET: z.string().min(MIN_JWT_SECRET_LENGTH, 'JWT_SECRET phải dài ít nhất ' + MIN_JWT_SECRET_LENGTH + ' ký tự'),
 });
 
 export type Env = z.infer<typeof envSchema>;

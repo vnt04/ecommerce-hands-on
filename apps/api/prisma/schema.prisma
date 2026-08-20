@@ -18,6 +18,13 @@ datasource db {
       provider = "postgresql"
 }
 
+enum UserRole {
+      CUSTOMER
+      ADMIN
+
+      @@map("user_role")
+}
+
 enum ProductStatus {
       DRAFT
       PUBLISHED
@@ -175,3 +182,45 @@ model SizeChart {
 
       @@map("size_charts")
 }
+
+/// Tài khoản. Không có đường tự đăng ký thành ADMIN — vai trò chỉ đặt được từ seed
+/// hoặc bằng thao tác quản trị có kiểm soát.
+model User {
+      id           BigInt   @id @default(autoincrement())
+      email        String   @unique
+      passwordHash String   @map("password_hash")
+      fullName     String   @map("full_name")
+      role         UserRole @default(CUSTOMER)
+
+      createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+      updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+      refreshTokens RefreshToken[]
+
+      @@map("users")
+}
+
+/// Refresh token xoay vòng: mỗi lần dùng sinh ra token mới và thu hồi token cũ.
+///
+/// familyId nhóm các token sinh ra từ cùng một lần đăng nhập. Dùng lại một token
+/// đã bị thay thế là dấu hiệu token bị đánh cắp, và cả họ token đó bị thu hồi.
+model RefreshToken {
+      id     BigInt @id @default(autoincrement())
+      userId BigInt @map("user_id")
+
+      /// Chỉ lưu chuỗi băm. Lộ database không đồng nghĩa lộ token dùng được.
+      tokenHash String @unique @map("token_hash")
+
+      familyId String @map("family_id")
+
+      expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+      revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+      createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+      user User @relation(fields: [userId], references: [id])
+
+      @@index([userId])
+      @@index([familyId])
+      @@map("refresh_tokens")
+}
+

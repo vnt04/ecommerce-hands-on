@@ -1,4 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg';
+import bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
 
 import { buildVariantMatrix } from '../modules/catalog/domain/variant-matrix.js';
@@ -28,6 +29,17 @@ const LARGE_SIZE_PRICE = 319000n;
 const DEFAULT_STOCK = 20;
 const TSHIRT_WEIGHT_GRAMS = 220;
 
+/**
+ * Tài khoản quản trị cho môi trường phát triển.
+ *
+ * Không có đường tự đăng ký thành ADMIN, nên đây là lối vào duy nhất lúc này.
+ * Seed không chạy trên production, nên môi trường thật vẫn cần một cách khác —
+ * ghi trong docs/steps/S06.md để bước lên production không phát hiện muộn.
+ */
+const ADMIN_EMAIL = 'admin@shopflow.local';
+const ADMIN_PASSWORD = 'admin-doi-mat-khau-ngay';
+const BCRYPT_COST = 12;
+
 const DESIGNS = [
       { designCode: 'TEE-SUNSET', slug: 'tee-sunset', name: 'Tee Sunset' },
       { designCode: 'TEE-MOUNTAIN', slug: 'tee-mountain', name: 'Tee Mountain' },
@@ -49,6 +61,17 @@ async function main(): Promise<void> {
       const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
       try {
+            await prisma.user.upsert({
+                  where: { email: ADMIN_EMAIL },
+                  update: {},
+                  create: {
+                        email: ADMIN_EMAIL,
+                        passwordHash: await bcrypt.hash(ADMIN_PASSWORD, BCRYPT_COST),
+                        fullName: 'Quản trị viên',
+                        role: 'ADMIN',
+                  },
+            });
+
             const category = await prisma.category.upsert({
                   where: { slug: 'ao-thun' },
                   update: {},

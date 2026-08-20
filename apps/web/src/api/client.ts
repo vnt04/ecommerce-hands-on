@@ -15,6 +15,31 @@ export type ApiResult<T> = { data: T; meta?: Meta };
 
 type QueryParams = Record<string, string | number | boolean | undefined>;
 
+/**
+ * Access token chỉ nằm trong bộ nhớ của ứng dụng, không nằm trong localStorage
+ * (ràng buộc R9 về xác thực). Script XSS đọc được localStorage; refresh token thì
+ * nằm trong cookie httpOnly nên nó không chạm tới được.
+ *
+ * Hệ quả: tải lại trang là mất access token, và phiên được dựng lại bằng một lần
+ * gọi refresh lúc khởi động.
+ */
+let accessToken: string | undefined;
+
+/** Chạy khi phiên hết hiệu lực hẳn, để tầng trên dọn trạng thái đăng nhập. */
+let onSessionExpired: (() => void) | undefined;
+
+export function setAccessToken(token: string | undefined): void {
+      accessToken = token;
+}
+
+export function getAccessToken(): string | undefined {
+      return accessToken;
+}
+
+export function onSessionExpiredHandler(handler: () => void): void {
+      onSessionExpired = handler;
+}
+
 function buildQueryString(params: QueryParams): string {
       const search = new URLSearchParams();
 
@@ -30,27 +55,102 @@ function buildQueryString(params: QueryParams): string {
 }
 
 /**
- * Gọi API và bóc lớp envelope.
+ * Lần gọi refresh đang chạy, nếu có.
  *
- * Mọi lời gọi đi qua đây để phần còn lại của ứng dụng không phải lặp lại việc
- * kiểm tra cờ success, và để lỗi mạng cùng lỗi nghiệp vụ cùng ném ra một kiểu.
+ * Đây là chốt chặn quan trọng nhất của tầng này. Trang danh sách gọi vài API song
+ * song; khi access token hết hạn thì tất cả cùng nhận 401 một lúc. Mỗi cái tự gọi
+ * refresh thì cái đầu xoay vòng token, những cái sau gửi token đã bị thay thế, và
+ * máy chủ coi đó là dấu hiệu token bị đánh cắp nên thu hồi cả phiên — người dùng
+ * bị đăng xuất dù không làm gì sai.
  *
- * Đường dẫn luôn tương đối: web và api nằm sau cùng một origin nên không cần
- * cấu hình URL cơ sở, và cookie xác thực ở bước sau sẽ hoạt động không cần CORS.
+ * Gộp về một lần gọi: ai tới sau thì chờ chính lần gọi đang chạy.
  */
-export async function apiGet<T>(path: string, params: QueryParams = {}): Promise<ApiResult<T>> {
-      let body: Envelope<T> & { meta?: Meta };
+let pendingRefresh: Promise<boolean> | undefined;
 
-      try {
-            const response = await fetch('/api/v1' + path + buildQueryString(params));
-            body = (await response.json()) as Envelope<T> & { meta?: Meta };
-      } catch {
-            throw new ApiError('NETWORK_ERROR', 'Không kết nối được máy chủ');
+async function requestNewAccessToken(): Promise<boolean> {
+      const response = await fetch('/api/v1/auth/refresh', { method: 'POST' });
+
+      if (!response.ok) {
+            setAccessToken(undefined);
+            onSessionExpired?.();
+
+            return false;
       }
+
+      const body = (await response.json()) as Envelope<{ accessToken: string }>;
+
+      if (!body.success) {
+            setAccessToken(undefined);
+            onSessionExpired?.();
+
+            return false;
+      }
+
+      setAccessToken(body.data.accessToken);
+
+      return true;
+}
+
+export async function refreshSession(): Promise<boolean> {
+      pendingRefresh ??= requestNewAccessToken().finally(() => {
+            pendingRefresh = undefined;
+      });
+
+      return pendingRefresh;
+}
+
+async function send(path: string, init: RequestInit): Promise<Response> {
+      const headers = new Headers(init.headers);
+
+      if (accessToken !== undefined) {
+            headers.set('Authorization', 'Bearer ' + accessToken);
+      }
+
+      return fetch('/api/v1' + path, { ...init, headers });
+}
+
+async function parse<T>(response: Response): Promise<ApiResult<T>> {
+      const body = (await response.json()) as Envelope<T> & { meta?: Meta };
 
       if (!body.success) {
             throw new ApiError(body.error.code, body.error.message);
       }
 
       return { data: body.data, meta: body.meta };
+}
+
+/**
+ * Gọi API, tự làm mới phiên một lần khi gặp 401.
+ *
+ * Chỉ thử lại đúng một lần: nếu sau khi refresh vẫn 401 thì phiên đã hỏng thật,
+ * và thử tiếp chỉ tạo vòng lặp.
+ */
+async function request<T>(path: string, init: RequestInit = {}): Promise<ApiResult<T>> {
+      let response: Response;
+
+      try {
+            response = await send(path, init);
+      } catch {
+            throw new ApiError('NETWORK_ERROR', 'Không kết nối được máy chủ');
+      }
+
+      if (response.status === 401 && accessToken !== undefined) {
+            if (await refreshSession()) {
+                  response = await send(path, init);
+            }
+      }
+
+      return parse<T>(response);
+}
+
+export function apiGet<T>(path: string, params: QueryParams = {}): Promise<ApiResult<T>> {
+      return request<T>(path + buildQueryString(params));
+}
+
+export function apiPost<T>(path: string, body?: unknown): Promise<ApiResult<T>> {
+      return request<T>(path, {
+            method: 'POST',
+            headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+            body: body === undefined ? undefined : JSON.stringify(body),
+      });
 }

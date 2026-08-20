@@ -12,6 +12,18 @@ const routes: RouteRecordRaw[] = [
             component: () => import('../pages/ProductDetailPage.vue'),
             props: true,
       },
+      {
+            path: '/dang-nhap',
+            name: 'login',
+            component: () => import('../pages/LoginPage.vue'),
+            props: { mode: 'login' },
+      },
+      {
+            path: '/dang-ky',
+            name: 'register',
+            component: () => import('../pages/LoginPage.vue'),
+            props: { mode: 'register' },
+      },
 ];
 
 export const router = createRouter({
