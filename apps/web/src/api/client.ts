@@ -5,6 +5,8 @@ export class ApiError extends Error {
       constructor(
             readonly code: ErrorCode | 'NETWORK_ERROR',
             message: string,
+            /** Dữ liệu máy đọc được do máy chủ gửi kèm, ví dụ SKU của dòng hết hàng. */
+            readonly details?: unknown,
       ) {
             super(message);
             this.name = 'ApiError';
@@ -113,7 +115,7 @@ async function parse<T>(response: Response): Promise<ApiResult<T>> {
       const body = (await response.json()) as Envelope<T> & { meta?: Meta };
 
       if (!body.success) {
-            throw new ApiError(body.error.code, body.error.message);
+            throw new ApiError(body.error.code, body.error.message, body.error.details);
       }
 
       return { data: body.data, meta: body.meta };
@@ -147,8 +149,8 @@ export function apiGet<T>(path: string, params: QueryParams = {}): Promise<ApiRe
       return request<T>(path + buildQueryString(params));
 }
 
-export function apiPost<T>(path: string, body?: unknown): Promise<ApiResult<T>> {
-      return sendJson<T>('POST', path, body);
+export function apiPost<T>(path: string, body?: unknown, headers?: Record<string, string>): Promise<ApiResult<T>> {
+      return sendJson<T>('POST', path, body, headers);
 }
 
 export function apiPatch<T>(path: string, body?: unknown): Promise<ApiResult<T>> {
@@ -159,10 +161,10 @@ export function apiDelete<T>(path: string): Promise<ApiResult<T>> {
       return request<T>(path, { method: 'DELETE' });
 }
 
-function sendJson<T>(method: string, path: string, body?: unknown): Promise<ApiResult<T>> {
+function sendJson<T>(method: string, path: string, body?: unknown, headers: Record<string, string> = {}): Promise<ApiResult<T>> {
       return request<T>(path, {
             method,
-            headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+            headers: body === undefined ? headers : { 'Content-Type': 'application/json', ...headers },
             body: body === undefined ? undefined : JSON.stringify(body),
       });
 }

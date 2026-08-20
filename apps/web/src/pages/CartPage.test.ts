@@ -56,8 +56,9 @@ async function mountPage() {
       return wrapper;
 }
 
-function findCheckoutButton(wrapper: Awaited<ReturnType<typeof mountPage>>) {
-      return wrapper.findAll('button').find((button) => button.text() === 'Đặt hàng');
+/** Nút đặt hàng là một liên kết sang trang thanh toán, không phải nút gửi biểu mẫu. */
+function findCheckoutLink(wrapper: Awaited<ReturnType<typeof mountPage>>) {
+      return wrapper.findAll('a').find((link) => link.text() === 'Đặt hàng');
 }
 
 beforeEach(() => {
@@ -124,7 +125,7 @@ describe('CartPage', () => {
             const wrapper = await mountPage();
 
             expect(wrapper.text()).toContain('Đã hết hàng');
-            expect(findCheckoutButton(wrapper)?.attributes('disabled')).toBeDefined();
+            expect(findCheckoutLink(wrapper)?.attributes('aria-disabled')).toBe('true');
       });
 
       test('giá đổi thì báo cho khách nhưng không chặn đặt hàng', async () => {
@@ -133,7 +134,7 @@ describe('CartPage', () => {
             const wrapper = await mountPage();
 
             expect(wrapper.text()).toContain('Giá đã thay đổi');
-            expect(findCheckoutButton(wrapper)?.attributes('disabled')).toBeUndefined();
+            expect(findCheckoutLink(wrapper)?.attributes('aria-disabled')).toBe('false');
       });
 
       test('số lượng bị chặn theo tồn thì hiện thông báo điều chỉnh', async () => {

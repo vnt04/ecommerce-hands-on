@@ -9,197 +9,226 @@
 //   - SKU sinh từ mã thiết kế, không sinh từ tên sản phẩm (ADR-006)
 
 generator client {
-      provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 // Chuỗi kết nối không còn khai báo ở đây từ Prisma 7. Lệnh migrate đọc từ
 // prisma.config.ts, còn client lúc chạy nhận qua driver adapter.
 datasource db {
-      provider = "postgresql"
+  provider = "postgresql"
 }
 
 enum UserRole {
-      CUSTOMER
-      ADMIN
+  CUSTOMER
+  ADMIN
 
-      @@map("user_role")
+  @@map("user_role")
 }
 
 enum ProductStatus {
-      DRAFT
-      PUBLISHED
+  DRAFT
+  PUBLISHED
 
-      @@map("product_status")
+  @@map("product_status")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPING
+  DELIVERED
+  CANCELLED
+
+  @@map("order_status")
+}
+
+/// COD là phương thức duy nhất ở S08. GATEWAY đã có mặt từ đầu để bước thêm cổng
+/// thanh toán không phải backfill cột trên dữ liệu đơn thật.
+enum PaymentMethod {
+  COD
+  GATEWAY
+
+  @@map("payment_method")
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+
+  @@map("payment_status")
 }
 
 model Category {
-      id        BigInt   @id @default(autoincrement())
-      slug      String   @unique
-      name      String
-      sortOrder Int      @default(0) @map("sort_order")
-      createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-      updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id        BigInt   @id @default(autoincrement())
+  slug      String   @unique
+  name      String
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-      products Product[]
+  products Product[]
 
-      @@map("categories")
+  @@map("categories")
 }
 
 /// Một thiết kế áo. Biến thể bán được nằm ở ProductVariant.
 model Product {
-      id         BigInt @id @default(autoincrement())
-      categoryId BigInt @map("category_id")
+  id         BigInt @id @default(autoincrement())
+  categoryId BigInt @map("category_id")
 
-      /// Mã thiết kế do admin đặt, ví dụ TEE-SUNSET. Tách khỏi tên hiển thị để
-      /// đổi tên sản phẩm không kéo theo nhu cầu đổi SKU (ADR-006, ràng buộc R8).
-      designCode String @unique @map("design_code")
+  /// Mã thiết kế do admin đặt, ví dụ TEE-SUNSET. Tách khỏi tên hiển thị để
+  /// đổi tên sản phẩm không kéo theo nhu cầu đổi SKU (ADR-006, ràng buộc R8).
+  designCode String @unique @map("design_code")
 
-      /// Định danh công khai trên URL (ADR-002).
-      slug String @unique
+  /// Định danh công khai trên URL (ADR-002).
+  slug String @unique
 
-      name        String
-      description String?
+  name        String
+  description String?
 
-      /// Thông tin đặc thù hàng may mặc, để có cấu trúc thay vì nhét vào mô tả tự do.
-      material    String?
-      careGuide   String? @map("care_guide")
-      printMethod String? @map("print_method")
+  /// Thông tin đặc thù hàng may mặc, để có cấu trúc thay vì nhét vào mô tả tự do.
+  material    String?
+  careGuide   String? @map("care_guide")
+  printMethod String? @map("print_method")
 
-      status ProductStatus @default(DRAFT)
+  status ProductStatus @default(DRAFT)
 
-      /// Không xoá cứng dữ liệu đã xuất hiện trong đơn hàng (ràng buộc R8).
-      archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
+  /// Không xoá cứng dữ liệu đã xuất hiện trong đơn hàng (ràng buộc R8).
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
 
-      sizeChartId BigInt? @map("size_chart_id")
+  sizeChartId BigInt? @map("size_chart_id")
 
-      createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-      updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-      category  Category         @relation(fields: [categoryId], references: [id])
-      sizeChart SizeChart?       @relation(fields: [sizeChartId], references: [id])
-      variants  ProductVariant[]
-      images    ProductImage[]
+  category  Category         @relation(fields: [categoryId], references: [id])
+  sizeChart SizeChart?       @relation(fields: [sizeChartId], references: [id])
+  variants  ProductVariant[]
+  images    ProductImage[]
 
-      @@index([categoryId, status])
-      @@map("products")
+  @@index([categoryId, status])
+  @@map("products")
 }
 
 /// Bảng tra cứu màu dùng chung toàn hệ thống. Giữ mã màu ở đây thay vì hardcode
 /// trong frontend, và giữ mã ngắn để ghép vào SKU.
 model Color {
-      id BigInt @id @default(autoincrement())
+  id BigInt @id @default(autoincrement())
 
-      /// Mã ngắn không dấu dùng trong SKU, ví dụ BLK.
-      code String @unique
+  /// Mã ngắn không dấu dùng trong SKU, ví dụ BLK.
+  code String @unique
 
-      /// Tên hiển thị cho khách, ví dụ Đen.
-      name String @unique
+  /// Tên hiển thị cho khách, ví dụ Đen.
+  name String @unique
 
-      /// Mã màu để vẽ swatch, ví dụ #000000.
-      hexCode String @map("hex_code")
+  /// Mã màu để vẽ swatch, ví dụ #000000.
+  hexCode String @map("hex_code")
 
-      createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-      variants ProductVariant[]
-      images   ProductImage[]
+  variants ProductVariant[]
+  images   ProductImage[]
 
-      @@map("colors")
+  @@map("colors")
 }
 
 /// Bảng tra cứu size. sortOrder tồn tại vì sắp theo tên cho ra 2XL, L, M, S, XL.
 model Size {
-      id        BigInt   @id @default(autoincrement())
-      name      String   @unique
-      sortOrder Int      @map("sort_order")
-      createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id        BigInt   @id @default(autoincrement())
+  name      String   @unique
+  sortOrder Int      @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-      variants ProductVariant[]
+  variants ProductVariant[]
 
-      @@map("sizes")
+  @@map("sizes")
 }
 
 /// Một tổ hợp màu × size bán được. Giá và tồn kho nằm ở đây, không nằm ở Product:
 /// size lớn tốn nhiều vải hơn nên được phép có giá khác.
 model ProductVariant {
-      id        BigInt @id @default(autoincrement())
-      productId BigInt @map("product_id")
-      colorId   BigInt @map("color_id")
-      sizeId    BigInt @map("size_id")
+  id        BigInt @id @default(autoincrement())
+  productId BigInt @map("product_id")
+  colorId   BigInt @map("color_id")
+  sizeId    BigInt @map("size_id")
 
-      /// Định danh công khai, không đổi sau khi đã vào đơn hàng (ràng buộc R8).
-      sku String @unique
+  /// Định danh công khai, không đổi sau khi đã vào đơn hàng (ràng buộc R8).
+  sku String @unique
 
-      /// Đơn vị đồng, luôn là số nguyên (ADR-003).
-      price BigInt
+  /// Đơn vị đồng, luôn là số nguyên (ADR-003).
+  price BigInt
 
-      stockQuantity Int @default(0) @map("stock_quantity")
+  stockQuantity Int @default(0) @map("stock_quantity")
 
-      /// Dùng để tính phí vận chuyển theo bậc khối lượng.
-      weightGrams Int @default(0) @map("weight_grams")
+  /// Dùng để tính phí vận chuyển theo bậc khối lượng.
+  weightGrams Int @default(0) @map("weight_grams")
 
-      /// Tổ hợp không sản xuất thì tắt thay vì xoá, để ma trận vẫn đầy đủ.
-      isActive Boolean @default(true) @map("is_active")
+  /// Tổ hợp không sản xuất thì tắt thay vì xoá, để ma trận vẫn đầy đủ.
+  isActive Boolean @default(true) @map("is_active")
 
-      createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-      updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-      product   Product    @relation(fields: [productId], references: [id])
-      color     Color      @relation(fields: [colorId], references: [id])
-      size      Size       @relation(fields: [sizeId], references: [id])
-      cartItems CartItem[]
+  product    Product     @relation(fields: [productId], references: [id])
+  color      Color       @relation(fields: [colorId], references: [id])
+  size       Size        @relation(fields: [sizeId], references: [id])
+  cartItems  CartItem[]
+  orderItems OrderItem[]
 
-      @@unique([productId, colorId, sizeId])
-      @@index([productId])
-      @@map("product_variants")
+  @@unique([productId, colorId, sizeId])
+  @@index([productId])
+  @@map("product_variants")
 }
 
 /// Ảnh gắn với một màu cụ thể để đổi swatch thì gallery đổi theo.
 /// colorId để trống nghĩa là ảnh chung, ví dụ ảnh chi tiết vải.
 model ProductImage {
-      id        BigInt   @id @default(autoincrement())
-      productId BigInt   @map("product_id")
-      colorId   BigInt?  @map("color_id")
-      url       String
-      altText   String?  @map("alt_text")
-      sortOrder Int      @default(0) @map("sort_order")
-      createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id        BigInt   @id @default(autoincrement())
+  productId BigInt   @map("product_id")
+  colorId   BigInt?  @map("color_id")
+  url       String
+  altText   String?  @map("alt_text")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-      product Product @relation(fields: [productId], references: [id])
-      color   Color?  @relation(fields: [colorId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  color   Color?  @relation(fields: [colorId], references: [id])
 
-      @@index([productId, colorId])
-      @@map("product_images")
+  @@index([productId, colorId])
+  @@map("product_images")
 }
 
 /// Bảng size dùng chung theo kiểu dáng. Số đo là dữ liệu để hiển thị, không bao giờ
 /// bị lọc hay sắp xếp theo từng trường, nên lưu JSON thay vì tách thành bảng con.
 model SizeChart {
-      id          BigInt   @id @default(autoincrement())
-      name        String   @unique
-      measurements Json
-      createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id           BigInt   @id @default(autoincrement())
+  name         String   @unique
+  measurements Json
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-      products Product[]
+  products Product[]
 
-      @@map("size_charts")
+  @@map("size_charts")
 }
 
 /// Tài khoản. Không có đường tự đăng ký thành ADMIN — vai trò chỉ đặt được từ seed
 /// hoặc bằng thao tác quản trị có kiểm soát.
 model User {
-      id           BigInt   @id @default(autoincrement())
-      email        String   @unique
-      passwordHash String   @map("password_hash")
-      fullName     String   @map("full_name")
-      role         UserRole @default(CUSTOMER)
+  id           BigInt   @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  role         UserRole @default(CUSTOMER)
 
-      createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-      updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-      refreshTokens RefreshToken[]
-      cart          Cart?
+  refreshTokens RefreshToken[]
+  cart          Cart?
+  orders        Order[]
 
-      @@map("users")
+  @@map("users")
 }
 
 /// Refresh token xoay vòng: mỗi lần dùng sinh ra token mới và thu hồi token cũ.
@@ -207,23 +236,23 @@ model User {
 /// familyId nhóm các token sinh ra từ cùng một lần đăng nhập. Dùng lại một token
 /// đã bị thay thế là dấu hiệu token bị đánh cắp, và cả họ token đó bị thu hồi.
 model RefreshToken {
-      id     BigInt @id @default(autoincrement())
-      userId BigInt @map("user_id")
+  id     BigInt @id @default(autoincrement())
+  userId BigInt @map("user_id")
 
-      /// Chỉ lưu chuỗi băm. Lộ database không đồng nghĩa lộ token dùng được.
-      tokenHash String @unique @map("token_hash")
+  /// Chỉ lưu chuỗi băm. Lộ database không đồng nghĩa lộ token dùng được.
+  tokenHash String @unique @map("token_hash")
 
-      familyId String @map("family_id")
+  familyId String @map("family_id")
 
-      expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
-      revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
-      createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-      user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
-      @@index([userId])
-      @@index([familyId])
-      @@map("refresh_tokens")
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
 }
 
 /// Giỏ hàng. Thuộc về một tài khoản, hoặc về một mã ẩn danh lưu trong cookie.
@@ -231,47 +260,151 @@ model RefreshToken {
 /// Thêm vào giỏ không trừ tồn kho: giỏ không phải cam kết mua. Trừ tồn xảy ra ở
 /// bước đặt hàng, trong cùng transaction tạo đơn.
 model Cart {
-      id BigInt @id @default(autoincrement())
+  id BigInt @id @default(autoincrement())
 
-      /// Giỏ của tài khoản. Mỗi tài khoản chỉ có một giỏ.
-      userId BigInt? @unique @map("user_id")
+  /// Giỏ của tài khoản. Mỗi tài khoản chỉ có một giỏ.
+  userId BigInt? @unique @map("user_id")
 
-      /// Giỏ ẩn danh. Mã ngẫu nhiên, lưu trong cookie httpOnly.
-      token String? @unique
+  /// Giỏ ẩn danh. Mã ngẫu nhiên, lưu trong cookie httpOnly.
+  token String? @unique
 
-      /// Giỏ ẩn danh chỉ tăng nếu không dọn. Đặt hạn ngay từ đầu để việc dọn định
-      /// kỳ sau này không phải backfill dữ liệu cũ.
-      expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  /// Giỏ ẩn danh chỉ tăng nếu không dọn. Đặt hạn ngay từ đầu để việc dọn định
+  /// kỳ sau này không phải backfill dữ liệu cũ.
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
 
-      createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-      updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-      user  User?      @relation(fields: [userId], references: [id])
-      items CartItem[]
+  user  User?      @relation(fields: [userId], references: [id])
+  items CartItem[]
 
-      @@index([expiresAt])
-      @@map("carts")
+  @@index([expiresAt])
+  @@map("carts")
 }
 
 model CartItem {
-      id        BigInt @id @default(autoincrement())
-      cartId    BigInt @map("cart_id")
-      variantId BigInt @map("variant_id")
-      quantity  Int
+  id        BigInt @id @default(autoincrement())
+  cartId    BigInt @map("cart_id")
+  variantId BigInt @map("variant_id")
+  quantity  Int
 
-      /// Giá tại thời điểm thêm vào giỏ. Không dùng để tính tiền — giỏ luôn hiển
-      /// thị giá hiện tại — mà chỉ để báo cho khách biết giá đã đổi. Giá chỉ được
-      /// chốt cứng khi đơn hàng hình thành (ràng buộc R4).
-      priceWhenAdded BigInt @map("price_when_added")
+  /// Giá tại thời điểm thêm vào giỏ. Không dùng để tính tiền — giỏ luôn hiển
+  /// thị giá hiện tại — mà chỉ để báo cho khách biết giá đã đổi. Giá chỉ được
+  /// chốt cứng khi đơn hàng hình thành (ràng buộc R4).
+  priceWhenAdded BigInt @map("price_when_added")
 
-      createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-      updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-      cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
-      variant ProductVariant @relation(fields: [variantId], references: [id])
+  cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id])
 
-      /// Ràng buộc này là thứ giữ cho việc gộp giỏ lúc đăng nhập không sinh dòng trùng.
-      @@unique([cartId, variantId])
-      @@map("cart_items")
+  /// Ràng buộc này là thứ giữ cho việc gộp giỏ lúc đăng nhập không sinh dòng trùng.
+  @@unique([cartId, variantId])
+  @@map("cart_items")
 }
 
+/// Đơn hàng. Mọi số tiền và mọi thông tin hiển thị đều là bản chép tại thời điểm
+/// đặt, không phải tham chiếu — đơn hàng là cam kết tại một thời điểm (ràng buộc R4).
+model Order {
+  id     BigInt  @id @default(autoincrement())
+  userId BigInt? @map("user_id")
+
+  /// Định danh công khai theo ADR-002, dạng `SF-260819-0001`. Đọc được qua điện thoại.
+  orderNumber String @unique @map("order_number")
+
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod @map("payment_method")
+  paymentStatus PaymentStatus @default(UNPAID) @map("payment_status")
+
+  /// Bản chép thông tin giao hàng. Không có khoá ngoại tới bảng nào: sửa hồ sơ
+  /// tài khoản không được phép chạm vào đơn đã đặt.
+  recipientName  String  @map("recipient_name")
+  recipientPhone String  @map("recipient_phone")
+  addressLine    String  @map("address_line")
+  ward           String
+  district       String
+  province       String
+  note           String?
+
+  /// Tổng tiền hàng. Đơn vị đồng, số nguyên (ADR-003). Bằng tổng các dòng đơn,
+  /// lưu sẵn để danh sách đơn không phải cộng lại từng lần.
+  subtotal BigInt
+
+  /// Phí vận chuyển. Bằng 0 ở S08; cách tính theo vùng chưa xếp bước.
+  shippingFee BigInt @default(0) @map("shipping_fee")
+
+  total BigInt
+
+  placedAt  DateTime @default(now()) @map("placed_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user  User?       @relation(fields: [userId], references: [id])
+  items OrderItem[]
+
+  @@index([userId, placedAt])
+  @@map("orders")
+}
+
+/// Một dòng đơn. Giữ tên sản phẩm, màu, size và SKU dưới dạng chuỗi để đơn cũ đọc
+/// được nguyên vẹn kể cả khi sản phẩm bị đổi tên hoặc lưu trữ (ràng buộc R8).
+model OrderItem {
+  id        BigInt  @id @default(autoincrement())
+  orderId   BigInt  @map("order_id")
+  variantId BigInt? @map("variant_id")
+
+  sku         String
+  productName String @map("product_name")
+  productSlug String @map("product_slug")
+  colorName   String @map("color_name")
+  sizeName    String @map("size_name")
+
+  quantity Int
+
+  /// Giá đơn vị đã chốt. Đổi bảng giá không chạm tới số này (ràng buộc R4).
+  unitPrice BigInt @map("unit_price")
+  lineTotal BigInt @map("line_total")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+/// Bộ đếm số thứ tự đơn trong ngày, phục vụ `order_number` của ADR-002.
+///
+/// Một hàng cho mỗi ngày. Cấp số bằng `INSERT ... ON CONFLICT DO UPDATE RETURNING`,
+/// nguyên tử trong một câu lệnh. Tuyệt đối không dùng `SELECT MAX() + 1`: hai đơn
+/// đặt đồng thời sẽ cùng đọc một giá trị và sinh ra hai mã trùng nhau.
+model OrderNumberCounter {
+  day       DateTime @id @db.Date
+  lastValue Int      @map("last_value")
+
+  @@map("order_number_counters")
+}
+
+/// Khoá chống trùng đơn (ràng buộc R3).
+///
+/// Client sinh khoá và giữ nguyên qua mọi lần thử lại. Ràng buộc `UNIQUE` trên
+/// `key` là thứ chặn thật; mã kiểm tra trước khi ghi chỉ là đường đi nhanh, vì
+/// hai request đồng thời đều thấy chưa có khoá.
+model IdempotencyKey {
+  id     BigInt  @id @default(autoincrement())
+  key    String  @unique
+  userId BigInt? @map("user_id")
+
+  /// Đơn đã tạo từ lần gọi đầu. Lần gọi lại trả về đúng đơn này.
+  orderId BigInt? @map("order_id")
+
+  /// Sau thời điểm này khoá không còn giá trị và có thể dọn.
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}

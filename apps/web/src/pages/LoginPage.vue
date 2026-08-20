@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import { ApiError } from '../api/client.js';
 import { useSessionStore } from '../stores/session.js';
@@ -8,6 +8,7 @@ import { useSessionStore } from '../stores/session.js';
 const props = defineProps<{ mode: 'login' | 'register' }>();
 
 const router = useRouter();
+const route = useRoute();
 const session = useSessionStore();
 
 const email = ref('');
@@ -27,7 +28,17 @@ async function submit(): Promise<void> {
                   await session.login(email.value, password.value);
             }
 
-            await router.push('/');
+            /**
+             * Quay lại nơi khách đang định tới, nếu có.
+             *
+             * Bấm "Đặt hàng" rồi bị đưa về trang đăng nhập, đăng nhập xong lại rơi về
+             * trang chủ là bắt khách đi lại từ đầu. Chỉ nhận đường dẫn nội bộ: nhận
+             * URL tuỳ ý ở đây là một lỗ chuyển hướng mở.
+             */
+            const next = route.query.tiep_tuc;
+            const target = typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+
+            await router.push(target);
       } catch (error) {
             // Hiển thị thông báo do máy chủ trả về: nó đã được viết để không tiết lộ
             // email nào tồn tại trong hệ thống.

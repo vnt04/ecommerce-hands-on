@@ -17,3 +17,15 @@ export type {
 } from './catalog.js';
 
 export type { CartLine, CartMutationResult, CartView } from './cart.js';
+
+export type {
+      OrderConflictDetail,
+      OrderConflictReason,
+      OrderDetail,
+      OrderLine,
+      OrderStatus,
+      OrderSummary,
+      PaymentMethod,
+      PaymentStatus,
+      ShippingInfo,
+} from './order.js';

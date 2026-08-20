@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { JwtAuthGuard, RolesGuard } from './modules/auth/auth.guards.js';
 import { CartModule } from './modules/cart/cart.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
+import { OrdersModule } from './modules/orders/orders.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RedisModule } from './redis/redis.module.js';
 
@@ -65,6 +66,7 @@ const GLOBAL_RATE_LIMIT = 100;
             AuthModule,
             CatalogModule,
             CartModule,
+            OrdersModule,
       ],
       controllers: [HealthController],
       providers: [

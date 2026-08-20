@@ -2,6 +2,8 @@ import { type ArgumentsHost, Catch, type ExceptionFilter, HttpException, HttpSta
 import { DEFAULT_ERROR_MESSAGES, ERROR_CODES, type ErrorCode, type ErrorEnvelope } from '@shopflow/shared';
 import type { Response } from 'express';
 
+import { DomainException } from '../errors/domain.exception.js';
+
 /** Ánh xạ mã HTTP sang mã lỗi máy đọc được. Frontend ra quyết định dựa trên mã này. */
 const STATUS_TO_CODE: Partial<Record<number, ErrorCode>> = {
       [HttpStatus.BAD_REQUEST]: ERROR_CODES.VALIDATION_FAILED,
@@ -35,10 +37,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
                   this.logger.error('Yêu cầu thất bại ngoài dự kiến', exception instanceof Error ? exception.stack : String(exception));
             }
 
-            const body: ErrorEnvelope = {
-                  success: false,
-                  error: { code, message: DEFAULT_ERROR_MESSAGES[code] },
-            };
+            // Lỗi nghiệp vụ đã lường trước mới được dùng thông báo và chi tiết của
+            // chính nó. Mọi lỗi khác dùng thông báo mặc định, vì nội dung lỗi gốc có
+            // thể chứa chi tiết SQL hoặc đường dẫn tệp.
+            const body: ErrorEnvelope =
+                  exception instanceof DomainException
+                        ? { success: false, error: { code, message: exception.userMessage, details: exception.details } }
+                        : { success: false, error: { code, message: DEFAULT_ERROR_MESSAGES[code] } };
 
             response.status(status).json(body);
       }

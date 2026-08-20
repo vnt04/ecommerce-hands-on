@@ -2,6 +2,7 @@ import { type ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/c
 import { ERROR_CODES } from '@shopflow/shared';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { DomainException } from '../errors/domain.exception.js';
 import { AllExceptionsFilter } from './all-exceptions.filter.js';
 
 function createHost() {
@@ -44,6 +45,18 @@ describe('AllExceptionsFilter', () => {
             new AllExceptionsFilter().catch(new HttpException('lỗi', httpStatus), host);
 
             expect(json).toHaveBeenCalledWith(expect.objectContaining({ error: expect.objectContaining({ code: expectedCode }) }));
+      });
+
+      test('lỗi nghiệp vụ giữ nguyên thông báo và chi tiết của chính nó', () => {
+            const { host, json } = createHost();
+            const details = { reason: 'OUT_OF_STOCK', sku: 'TEE-SUNSET-BLK-S', availableQuantity: 0 };
+
+            new AllExceptionsFilter().catch(new DomainException(HttpStatus.CONFLICT, 'Áo đã hết hàng', details), host);
+
+            expect(json).toHaveBeenCalledWith({
+                  success: false,
+                  error: { code: ERROR_CODES.CONFLICT, message: 'Áo đã hết hàng', details },
+            });
       });
 
       test('lỗi ngoài dự kiến trả 500 và không lộ nội dung lỗi gốc', () => {

@@ -90,13 +90,14 @@ function quantityOptions(availableQuantity: number): number[] {
                   bước đặt hàng từ chối là bắt khách nhập lại địa chỉ cho một đơn không
                   thể thành công.
             -->
-            <button
-                  type="button"
-                  class="mt-6 w-full rounded bg-brand py-3 font-semibold text-white disabled:cursor-not-allowed disabled:bg-gray-300"
-                  :disabled="hasBlockingLine || isMutating"
+            <RouterLink
+                  :to="hasBlockingLine ? '' : '/thanh-toan'"
+                  class="mt-6 block w-full rounded py-3 text-center font-semibold text-white"
+                  :class="hasBlockingLine ? 'pointer-events-none bg-gray-300' : 'bg-brand'"
+                  :aria-disabled="hasBlockingLine"
             >
                   Đặt hàng
-            </button>
+            </RouterLink>
             <p v-if="hasBlockingLine" class="mt-2 text-center text-sm text-gray-500">Xoá các dòng đã hết hàng để tiếp tục.</p>
       </QueryState>
 </template>

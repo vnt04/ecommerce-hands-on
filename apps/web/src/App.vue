@@ -49,6 +49,7 @@ onMounted(() => {
                               </RouterLink>
 
                               <template v-if="session.user">
+                                    <RouterLink to="/don-hang" class="hover:underline">Đơn hàng</RouterLink>
                                     <span>{{ session.user.fullName }}</span>
                                     <button type="button" class="hover:underline" @click="session.logout()">Đăng xuất</button>
                               </template>

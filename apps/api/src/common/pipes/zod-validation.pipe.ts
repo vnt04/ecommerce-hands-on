@@ -1,11 +1,15 @@
-import { BadRequestException, type PipeTransform } from '@nestjs/common';
+import { HttpStatus, type PipeTransform } from '@nestjs/common';
 import type { ZodType } from 'zod';
+
+import { DomainException } from '../errors/domain.exception.js';
 
 /**
  * Validate dữ liệu vào ở biên bằng Zod.
  *
- * Ném BadRequestException để exception filter ánh xạ sang mã VALIDATION_FAILED,
- * thay vì để lỗi của Zod rơi vào nhánh lỗi 500 và lộ cấu trúc schema ra ngoài.
+ * Trả kèm danh sách tên trường sai, không trả thông điệp gốc của Zod: thông điệp
+ * mặc định của Zod là tiếng Anh và mô tả cấu trúc schema. Giao diện tự quyết câu
+ * chữ tiếng Việt cho từng trường, đúng nguyên tắc frontend phân nhánh theo mã và
+ * dữ liệu máy đọc được chứ không theo thông điệp.
  */
 export class ZodValidationPipe<T> implements PipeTransform<unknown, T> {
       constructor(private readonly schema: ZodType<T>) {}
@@ -14,7 +18,9 @@ export class ZodValidationPipe<T> implements PipeTransform<unknown, T> {
             const result = this.schema.safeParse(value);
 
             if (!result.success) {
-                  throw new BadRequestException(result.error.issues.map((issue) => issue.path.join('.')).join(', '));
+                  const fields = [...new Set(result.error.issues.map((issue) => issue.path.join('.')))];
+
+                  throw new DomainException(HttpStatus.BAD_REQUEST, 'Dữ liệu gửi lên không hợp lệ', { fields });
             }
 
             return result.data;
