@@ -19,9 +19,13 @@ export type {
 export type { CartLine, CartMutationResult, CartView } from './cart.js';
 
 export type {
+      AdminOrderFilters,
+      AdminOrderSummary,
       OrderConflictDetail,
       OrderConflictReason,
       OrderDetail,
+      OrderDetailWithHistory,
+      OrderHistoryEntry,
       OrderLine,
       OrderStatus,
       OrderSummary,

@@ -1,10 +1,12 @@
 import { BadRequestException, Body, Controller, Get, Headers, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
-import type { OrderDetail, OrderSummary } from '@shopflow/shared';
+import type { OrderDetail, OrderDetailWithHistory, OrderSummary } from '@shopflow/shared';
 
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { CurrentUser } from '../auth/auth.decorators.js';
 import type { AuthenticatedUser } from '../auth/auth.service.js';
+import { cancelOrderSchema, type CancelOrderBody } from './dto/admin-order.schema.js';
 import { idempotencyKeySchema, placeOrderSchema, type PlaceOrderBody } from './dto/place-order.schema.js';
+import { OrderAdminService } from './order-admin.service.js';
 import { OrdersService } from './orders.service.js';
 
 /**
@@ -16,7 +18,10 @@ import { OrdersService } from './orders.service.js';
  */
 @Controller('orders')
 export class OrdersController {
-      constructor(private readonly orders: OrdersService) {}
+      constructor(
+            private readonly orders: OrdersService,
+            private readonly admin: OrderAdminService,
+      ) {}
 
       /**
        * Tạo đơn từ giỏ của tài khoản đang đăng nhập.
@@ -48,7 +53,32 @@ export class OrdersController {
       }
 
       @Get(':orderNumber')
-      detail(@Param('orderNumber') orderNumber: string, @CurrentUser() user: AuthenticatedUser): Promise<OrderDetail> {
-            return this.orders.findByNumber(orderNumber, user.id);
+      detail(@Param('orderNumber') orderNumber: string, @CurrentUser() user: AuthenticatedUser): Promise<OrderDetailWithHistory> {
+            return this.admin.detail(orderNumber, { id: user.id, isAdmin: false });
+      }
+
+      /**
+       * Khách tự huỷ đơn của mình.
+       *
+       * Chỉ huỷ được khi đơn còn chờ xác nhận. Đã xác nhận nghĩa là người bán đã bắt
+       * đầu soạn hàng, và lúc đó việc huỷ cần một cuộc trao đổi. Luật này nằm trong
+       * máy trạng thái, không phải ở đây.
+       */
+      @Post(':orderNumber/cancel')
+      @HttpCode(HttpStatus.OK)
+      async cancel(
+            @Param('orderNumber') orderNumber: string,
+            @Body(new ZodValidationPipe(cancelOrderSchema)) input: CancelOrderBody,
+            @CurrentUser() user: AuthenticatedUser,
+      ): Promise<OrderDetailWithHistory> {
+            await this.admin.changeStatus({
+                  orderNumber,
+                  to: 'CANCELLED',
+                  actorId: user.id,
+                  isAdmin: false,
+                  note: input.note,
+            });
+
+            return this.admin.detail(orderNumber, { id: user.id, isAdmin: false });
       }
 }

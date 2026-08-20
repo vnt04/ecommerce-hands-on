@@ -64,3 +64,34 @@ export type OrderConflictDetail = {
       sku?: string;
       availableQuantity?: number;
 };
+
+/** Một dòng lịch sử: đúng một thay đổi, hoặc trạng thái đơn, hoặc trạng thái thanh toán. */
+export type OrderHistoryEntry = {
+      at: string;
+      /** Tên người thực hiện. Rỗng nghĩa là do hệ thống. */
+      changedBy: string | null;
+      note: string | null;
+} & ({ kind: 'STATUS'; from: OrderStatus | null; to: OrderStatus } | { kind: 'PAYMENT'; from: PaymentStatus | null; to: PaymentStatus });
+
+export type OrderDetailWithHistory = OrderDetail & {
+      history: OrderHistoryEntry[];
+      /** Bước chuyển hợp lệ từ trạng thái hiện tại, đối với người đang xem. */
+      allowedTransitions: OrderStatus[];
+};
+
+/** Hàng trong danh sách đơn của quản trị viên: đủ để xử lý mà không phải mở từng đơn. */
+export type AdminOrderSummary = OrderSummary & {
+      recipientName: string;
+      recipientPhone: string;
+      province: string;
+};
+
+export type AdminOrderFilters = {
+      status?: OrderStatus;
+      /** Ngày đặt, dạng `YYYY-MM-DD` theo giờ Việt Nam. */
+      from?: string;
+      to?: string;
+      /** Mã đơn hoặc số điện thoại người nhận. */
+      search?: string;
+      page?: number;
+};

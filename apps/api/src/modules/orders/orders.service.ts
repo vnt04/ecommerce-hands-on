@@ -146,6 +146,20 @@ export class OrdersService {
             return this.findById(order.id);
       }
 
+      /**
+       * Đọc đơn không kiểm quyền sở hữu. Chỉ dùng cho đường quản trị, nơi việc kiểm
+       * quyền đã do `RolesGuard` lo.
+       */
+      async detailByNumber(orderNumber: string): Promise<OrderDetail> {
+            const order = await this.prisma.order.findUnique({ where: { orderNumber }, select: { id: true } });
+
+            if (order === null) {
+                  throw new NotFoundException('Không tìm thấy đơn hàng');
+            }
+
+            return this.findById(order.id);
+      }
+
       private async findById(id: bigint): Promise<OrderDetail> {
             const order = await this.prisma.order.findUniqueOrThrow({
                   where: { id },

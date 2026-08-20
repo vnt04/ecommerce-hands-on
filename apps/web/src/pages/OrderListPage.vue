@@ -1,34 +1,15 @@
 <script setup lang="ts">
-import { formatVndFromJson, type OrderStatus } from '@shopflow/shared';
+import { formatVndFromJson } from '@shopflow/shared';
 import { useQuery } from '@tanstack/vue-query';
 import { computed } from 'vue';
 
 import { fetchOrders } from '../api/orders.js';
 import QueryState from '../components/QueryState.vue';
+import { formatDate, ORDER_STATUS_CLASSES, ORDER_STATUS_LABELS } from '../composables/orderStatus.js';
 
 const query = useQuery({ queryKey: ['orders'], queryFn: fetchOrders });
 
 const orders = computed(() => query.data.value ?? []);
-
-const STATUS_LABELS: Record<OrderStatus, string> = {
-      PENDING: 'Chờ xác nhận',
-      CONFIRMED: 'Đã xác nhận',
-      SHIPPING: 'Đang giao',
-      DELIVERED: 'Đã giao',
-      CANCELLED: 'Đã huỷ',
-};
-
-const STATUS_CLASSES: Record<OrderStatus, string> = {
-      PENDING: 'bg-amber-100 text-amber-900',
-      CONFIRMED: 'bg-blue-100 text-blue-900',
-      SHIPPING: 'bg-blue-100 text-blue-900',
-      DELIVERED: 'bg-green-100 text-green-900',
-      CANCELLED: 'bg-gray-200 text-gray-700',
-};
-
-function formatPlacedAt(value: string): string {
-      return new Date(value).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-}
 </script>
 
 <template>
@@ -46,11 +27,11 @@ function formatPlacedAt(value: string): string {
                               <RouterLink :to="'/don-hang/' + order.orderNumber" class="font-semibold hover:underline">
                                     {{ order.orderNumber }}
                               </RouterLink>
-                              <p class="text-sm text-gray-500">{{ formatPlacedAt(order.placedAt) }} · {{ order.itemCount }} sản phẩm</p>
+                              <p class="text-sm text-gray-500">{{ formatDate(order.placedAt) }} · {{ order.itemCount }} sản phẩm</p>
                         </div>
 
-                        <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="STATUS_CLASSES[order.status]">
-                              {{ STATUS_LABELS[order.status] }}
+                        <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="ORDER_STATUS_CLASSES[order.status]">
+                              {{ ORDER_STATUS_LABELS[order.status] }}
                         </span>
 
                         <p class="w-32 text-right font-semibold">{{ formatVndFromJson(order.total) }}</p>

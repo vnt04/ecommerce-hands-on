@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { formatVndFromJson, type OrderStatus } from '@shopflow/shared';
-import { useQuery } from '@tanstack/vue-query';
-import { computed } from 'vue';
+import { formatVndFromJson } from '@shopflow/shared';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { fetchOrder } from '../api/orders.js';
+import { ApiError } from '../api/client.js';
+import { cancelOrder, fetchOrder } from '../api/orders.js';
 import QueryState from '../components/QueryState.vue';
+import { formatDateTime, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '../composables/orderStatus.js';
 
 const props = defineProps<{ orderNumber: string }>();
 
@@ -21,16 +23,29 @@ const query = useQuery({
 
 const order = computed(() => query.data.value);
 
-const STATUS_LABELS: Record<OrderStatus, string> = {
-      PENDING: 'Chờ xác nhận',
-      CONFIRMED: 'Đã xác nhận',
-      SHIPPING: 'Đang giao',
-      DELIVERED: 'Đã giao',
-      CANCELLED: 'Đã huỷ',
-};
+const queryClient = useQueryClient();
+const cancelError = ref<string | undefined>(undefined);
 
-function formatPlacedAt(value: string): string {
-      return new Date(value).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+/** Khách chỉ huỷ được khi máy chủ nói là được. Giao diện không tự suy luật đó. */
+const canCancel = computed(() => order.value?.allowedTransitions.includes('CANCELLED') === true);
+
+const cancelMutation = useMutation({
+      mutationFn: () => cancelOrder(props.orderNumber),
+      onSuccess: (updated) => {
+            queryClient.setQueryData(['order', props.orderNumber], updated);
+            void queryClient.invalidateQueries({ queryKey: ['orders'] });
+            cancelError.value = undefined;
+      },
+      onError: (error: unknown) => {
+            cancelError.value = error instanceof ApiError ? error.message : 'Không huỷ được đơn, vui lòng thử lại';
+      },
+});
+
+/** Huỷ đơn không lùi lại được, nên hỏi lại trước khi gửi. */
+function confirmCancel(): void {
+      if (window.confirm('Huỷ đơn này? Thao tác không thể hoàn tác.')) {
+            cancelMutation.mutate();
+      }
 }
 </script>
 
@@ -44,7 +59,7 @@ function formatPlacedAt(value: string): string {
 
                   <h1 class="mt-4 text-2xl font-bold text-brand">Đơn {{ order.orderNumber }}</h1>
                   <p class="mt-1 text-sm text-gray-500">
-                        Đặt lúc {{ formatPlacedAt(order.placedAt) }} · {{ STATUS_LABELS[order.status] }} ·
+                        Đặt lúc {{ formatDateTime(order.placedAt) }} · {{ ORDER_STATUS_LABELS[order.status] }} ·
                         {{ order.paymentMethod === 'COD' ? 'Thanh toán khi nhận hàng' : 'Thanh toán trực tuyến' }}
                   </p>
 
@@ -87,9 +102,33 @@ function formatPlacedAt(value: string): string {
                         <p v-if="order.shipping.note" class="mt-2 text-gray-600">Ghi chú: {{ order.shipping.note }}</p>
                   </section>
 
-                  <RouterLink to="/don-hang" class="mt-6 inline-block text-sm text-gray-500 hover:underline">
-                        ← Tất cả đơn hàng
-                  </RouterLink>
+                  <section v-if="order.history.length > 0" class="mt-6 rounded border border-gray-200 p-4 text-sm">
+                        <h2 class="font-semibold">Lịch sử đơn</h2>
+
+                        <ol class="mt-3 space-y-2">
+                              <li v-for="(entry, index) in order.history" :key="index">
+                                    <span v-if="entry.kind === 'STATUS'">{{ ORDER_STATUS_LABELS[entry.to] }}</span>
+                                    <span v-else>{{ PAYMENT_STATUS_LABELS[entry.to] }}</span>
+                                    <span class="text-gray-500"> · {{ formatDateTime(entry.at) }}</span>
+                              </li>
+                        </ol>
+                  </section>
+
+                  <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+                        <RouterLink to="/don-hang" class="text-sm text-gray-500 hover:underline">← Tất cả đơn hàng</RouterLink>
+
+                        <button
+                              v-if="canCancel"
+                              type="button"
+                              class="rounded border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+                              :disabled="cancelMutation.isPending.value"
+                              @click="confirmCancel()"
+                        >
+                              {{ cancelMutation.isPending.value ? 'Đang huỷ…' : 'Huỷ đơn' }}
+                        </button>
+                  </div>
+
+                  <p v-if="cancelError" class="mt-3 rounded bg-red-50 p-3 text-sm text-red-800" role="alert">{{ cancelError }}</p>
             </article>
       </QueryState>
 </template>

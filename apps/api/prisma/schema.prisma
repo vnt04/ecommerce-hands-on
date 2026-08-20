@@ -224,9 +224,10 @@ model User {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  refreshTokens RefreshToken[]
-  cart          Cart?
-  orders        Order[]
+  refreshTokens        RefreshToken[]
+  cart                 Cart?
+  orders               Order[]
+  orderStatusHistories OrderStatusHistory[]
 
   @@map("users")
 }
@@ -340,10 +341,15 @@ model Order {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user  User?       @relation(fields: [userId], references: [id])
-  items OrderItem[]
+  user    User?                @relation(fields: [userId], references: [id])
+  items   OrderItem[]
+  history OrderStatusHistory[]
 
   @@index([userId, placedAt])
+  /// Màn hình quản trị lọc theo trạng thái và sắp theo thời điểm đặt.
+  @@index([status, placedAt])
+  /// Khách gọi tới đọc số điện thoại là tra ra đơn.
+  @@index([recipientPhone])
   @@map("orders")
 }
 
@@ -407,4 +413,39 @@ model IdempotencyKey {
 
   @@index([expiresAt])
   @@map("idempotency_keys")
+}
+
+/// Lịch sử chuyển trạng thái của một đơn. Chỉ ghi thêm, không bao giờ sửa đè.
+///
+/// Đơn bị huỷ mà không biết ai huỷ là tranh cãi không có cách phân xử. Bảng này
+/// là thứ duy nhất trả lời được câu hỏi đó sau sự cố.
+model OrderStatusHistory {
+  id      BigInt @id @default(autoincrement())
+  orderId BigInt @map("order_id")
+
+  /// Một dòng ghi đúng một thay đổi: hoặc trạng thái đơn, hoặc trạng thái thanh
+  /// toán. Ràng buộc CHECK trong migration bảo đảm luôn có đúng một trong hai.
+  ///
+  /// `fromStatus` rỗng khi trạng thái được đặt lúc tạo đơn, vì lúc đó chưa có
+  /// trạng thái trước.
+  fromStatus OrderStatus? @map("from_status")
+  toStatus   OrderStatus? @map("to_status")
+
+  paymentFromStatus PaymentStatus? @map("payment_from_status")
+  paymentToStatus   PaymentStatus? @map("payment_to_status")
+
+  /// Người thực hiện. Rỗng nếu do hệ thống, ví dụ công việc chạy nền sau này.
+  /// Giữ được cả khi tài khoản bị xoá, vì lịch sử phải sống sót (ràng buộc R8).
+  changedById BigInt? @map("changed_by_id")
+
+  /// Ghi chú lý do, ví dụ lý do huỷ đơn.
+  note String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy User? @relation(fields: [changedById], references: [id])
+
+  @@index([orderId, createdAt])
+  @@map("order_status_history")
 }

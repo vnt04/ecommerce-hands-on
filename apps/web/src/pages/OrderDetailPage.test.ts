@@ -1,16 +1,22 @@
-import type { OrderDetail } from '@shopflow/shared';
+import type { OrderDetailWithHistory } from '@shopflow/shared';
 import { VueQueryPlugin } from '@tanstack/vue-query';
 import { flushPromises, mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { ApiError } from '../api/client.js';
 import OrderDetailPage from './OrderDetailPage.vue';
 
 const fetchOrder = vi.fn();
+const cancelOrder = vi.fn();
 const routeQuery: { vua_dat?: string } = {};
 
 vi.mock('../api/orders.js', () => ({
       fetchOrder: (orderNumber: string) => fetchOrder(orderNumber),
+      cancelOrder: (orderNumber: string) => cancelOrder(orderNumber),
       fetchOrders: vi.fn(),
+      fetchAdminOrders: vi.fn(),
+      fetchAdminOrder: vi.fn(),
+      updateAdminOrder: vi.fn(),
       placeOrder: vi.fn(),
       newIdempotencyKey: vi.fn(),
 }));
@@ -20,7 +26,7 @@ vi.mock('vue-router', () => ({
       useRouter: () => ({ push: vi.fn() }),
 }));
 
-const ORDER: OrderDetail = {
+const ORDER: OrderDetailWithHistory = {
       orderNumber: 'SF-260820-0001',
       status: 'PENDING',
       paymentMethod: 'COD',
@@ -51,6 +57,8 @@ const ORDER: OrderDetail = {
             province: 'TP Hồ Chí Minh',
             note: 'Giao giờ hành chính',
       },
+      history: [],
+      allowedTransitions: ['CANCELLED'],
 };
 
 async function mountPage() {
@@ -67,10 +75,20 @@ async function mountPage() {
       return wrapper;
 }
 
+function cancelButton(wrapper: Awaited<ReturnType<typeof mountPage>>) {
+      return wrapper.findAll('button').find((button) => button.text().startsWith('Huỷ đơn') || button.text().startsWith('Đang huỷ'));
+}
+
 beforeEach(() => {
       vi.clearAllMocks();
       delete routeQuery.vua_dat;
       fetchOrder.mockResolvedValue(ORDER);
+      cancelOrder.mockResolvedValue({ ...ORDER, status: 'CANCELLED', allowedTransitions: [] });
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+});
+
+afterEach(() => {
+      vi.restoreAllMocks();
 });
 
 describe('OrderDetailPage', () => {
@@ -118,6 +136,52 @@ describe('OrderDetailPage', () => {
             const wrapper = await mountPage();
 
             expect(wrapper.text()).toContain('Đang giao');
+      });
+
+      test('hiện nút huỷ khi máy chủ nói là huỷ được', async () => {
+            const wrapper = await mountPage();
+
+            expect(cancelButton(wrapper)).toBeDefined();
+      });
+
+      test('không hiện nút huỷ khi đơn đã qua bước chờ xác nhận', async () => {
+            // Luật nằm ở máy chủ; giao diện chỉ đọc allowedTransitions, không tự suy.
+            fetchOrder.mockResolvedValue({ ...ORDER, status: 'CONFIRMED', allowedTransitions: [] });
+
+            const wrapper = await mountPage();
+
+            expect(cancelButton(wrapper)).toBeUndefined();
+      });
+
+      test('huỷ đơn hỏi lại trước khi gửi', async () => {
+            vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+            const wrapper = await mountPage();
+            await cancelButton(wrapper)?.trigger('click');
+            await flushPromises();
+
+            expect(cancelOrder).not.toHaveBeenCalled();
+      });
+
+      test('huỷ thành công thì trạng thái đổi và nút biến mất', async () => {
+            const wrapper = await mountPage();
+
+            await cancelButton(wrapper)?.trigger('click');
+            await flushPromises();
+
+            expect(cancelOrder).toHaveBeenCalledWith('SF-260820-0001');
+            expect(wrapper.text()).toContain('Đã huỷ');
+            expect(cancelButton(wrapper)).toBeUndefined();
+      });
+
+      test('máy chủ từ chối huỷ thì hiện thông báo của máy chủ', async () => {
+            cancelOrder.mockRejectedValue(new ApiError('CONFLICT', 'Đơn đang ở trạng thái đã xác nhận nên không tự huỷ được'));
+
+            const wrapper = await mountPage();
+            await cancelButton(wrapper)?.trigger('click');
+            await flushPromises();
+
+            expect(wrapper.find('[role="alert"]').text()).toContain('không tự huỷ được');
       });
 
       test('hiển thị trạng thái lỗi thay vì trang trắng khi API hỏng', async () => {

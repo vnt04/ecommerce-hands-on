@@ -39,6 +39,19 @@ const routes: RouteRecordRaw[] = [
             meta: { requiresAuth: true },
       },
       {
+            path: '/quan-tri/don-hang',
+            name: 'admin-orders',
+            component: () => import('../pages/admin/AdminOrderListPage.vue'),
+            meta: { requiresAdmin: true },
+      },
+      {
+            path: '/quan-tri/don-hang/:orderNumber',
+            name: 'admin-order-detail',
+            component: () => import('../pages/admin/AdminOrderDetailPage.vue'),
+            props: true,
+            meta: { requiresAdmin: true },
+      },
+      {
             path: '/dang-nhap',
             name: 'login',
             component: () => import('../pages/LoginPage.vue'),
@@ -67,7 +80,9 @@ export const router = createRouter({
 });
 
 router.beforeEach(async (to) => {
-      if (to.meta.requiresAuth !== true) {
+      const needsAdmin = to.meta.requiresAdmin === true;
+
+      if (to.meta.requiresAuth !== true && !needsAdmin) {
             return true;
       }
 
@@ -79,5 +94,11 @@ router.beforeEach(async (to) => {
             await session.restore();
       }
 
-      return session.user === undefined ? { name: 'login', query: { tiep_tuc: to.fullPath } } : true;
+      if (session.user === undefined) {
+            return { name: 'login', query: { tiep_tuc: to.fullPath } };
+      }
+
+      // Đưa về trang chủ thay vì hiện màn hình lỗi: người dùng thường không cần biết
+      // khu vực quản trị tồn tại. Mọi kiểm quyền thật vẫn nằm ở backend (R7).
+      return needsAdmin && session.user.role !== 'ADMIN' ? { name: 'products' } : true;
 });
