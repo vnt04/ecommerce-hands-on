@@ -41,8 +41,15 @@ const envSchema = z.object({
       S3_ENDPOINT: z.string().url().optional(),
       S3_REGION: z.string().min(1),
       S3_BUCKET: z.string().min(1),
-      S3_ACCESS_KEY_ID: z.string().min(1),
-      S3_SECRET_ACCESS_KEY: z.string().min(1),
+      /**
+       * Cặp khoá tĩnh, chỉ dùng ở môi trường phát triển với MinIO.
+       *
+       * Trên AWS thì bỏ trống: task lấy quyền từ IAM role gắn với nó, và SDK tự
+       * tìm lấy. Cấp khoá tĩnh ở đó là tạo ra một thứ phải xoay vòng và phải giữ
+       * bí mật, trong khi đã có sẵn cơ chế không cần cả hai.
+       */
+      S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+      S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
 
       /**
        * Địa chỉ trình duyệt dùng để tải ảnh về. Khác S3_ENDPOINT vì hostname nội bộ

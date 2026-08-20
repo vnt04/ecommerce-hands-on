@@ -28,13 +28,21 @@ export class StorageService implements OnModuleInit {
       private readonly client: S3Client;
 
       constructor() {
+            const { S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY } = this.env;
+
             this.client = new S3Client({
                   region: this.env.S3_REGION,
                   endpoint: this.env.S3_ENDPOINT,
-                  credentials: {
-                        accessKeyId: this.env.S3_ACCESS_KEY_ID,
-                        secretAccessKey: this.env.S3_SECRET_ACCESS_KEY,
-                  },
+
+                  /**
+                   * Chỉ cấp khoá tĩnh khi cấu hình có nêu, tức là ở môi trường phát
+                   * triển với MinIO. Bỏ trống thì SDK tự tìm quyền theo thứ tự của
+                   * nó, và trên ECS thứ nó tìm thấy là IAM role gắn với task.
+                   */
+                  credentials:
+                        S3_ACCESS_KEY_ID !== undefined && S3_SECRET_ACCESS_KEY !== undefined
+                              ? { accessKeyId: S3_ACCESS_KEY_ID, secretAccessKey: S3_SECRET_ACCESS_KEY }
+                              : undefined,
                   /**
                    * MinIO định địa chỉ theo đường dẫn (`endpoint/bucket/key`), còn S3 mặc
                    * định dùng tên miền con. Bật cờ này khi có điểm cuối tự khai báo.

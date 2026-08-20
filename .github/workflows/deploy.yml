@@ -1,0 +1,194 @@
+name: Deploy
+
+# Chỉ chạy khi được bấm tay, không chạy tự động theo mỗi lần đẩy lên main.
+#
+# Triển khai tự động cần một môi trường staging để bắt lỗi trước, mà dự án chưa
+# có. Bấm tay là một bước dừng có chủ đích cho tới khi có staging.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Môi trường triển khai
+        type: choice
+        options: [prod]
+        default: prod
+
+concurrency:
+  # Hai lần triển khai chồng nhau có thể đẩy hai bản khác nhau lên cùng lúc và
+  # bản đến sau chưa chắc là bản mới hơn. Xếp hàng thay vì huỷ bản đang chạy:
+  # huỷ giữa chừng có thể để lại migration đã chạy mà mã chưa lên.
+  group: deploy-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/api
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Đặt tên thẻ ảnh theo commit
+        id: meta
+        run: |
+          # Thẻ là mã commit, không phải `latest`. Quay lui là trỏ về thẻ cũ, và
+          # `latest` thì không có thẻ cũ nào để trỏ về.
+          tag="${GITHUB_SHA::12}"
+          image="${REGISTRY}/${IMAGE_NAME}:${tag}"
+          echo "image=${image,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dựng và đẩy ảnh api
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          push: true
+          tags: ${{ steps.meta.outputs.image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Web là tệp tĩnh, không phải container. Dựng ở đây rồi giữ lại để bước
+      # triển khai đồng bộ lên S3.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Dựng web tĩnh
+        # Không truyền secret nào vào bước này. Biến build của Vite đi thẳng vào
+        # tệp tải về máy khách (ràng buộc R6).
+        run: |
+          pnpm --filter @shopflow/shared build
+          pnpm --filter @shopflow/web build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist
+          retention-days: 7
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    # Yêu cầu phê duyệt trước khi chạm vào production. Cấu hình người phê duyệt ở
+    # Settings > Environments trên GitHub.
+    environment: ${{ github.event.inputs.environment }}
+
+    permissions:
+      contents: read
+      # Lấy quyền AWS bằng OIDC, không lưu cặp khoá tĩnh trong GitHub Secrets.
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist
+
+      - name: Lấy quyền AWS qua OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # Migration chạy trước và chạy xong hẳn mới cập nhật service. Chạy song song
+      # nghĩa là bản mã cũ có thể gặp lược đồ mới giữa chừng.
+      - name: Chạy migration
+        run: |
+          set -euo pipefail
+          cluster='${{ vars.ECS_CLUSTER }}'
+          task_arn=$(aws ecs run-task \
+            --cluster "$cluster" \
+            --task-definition '${{ vars.MIGRATE_TASK_DEFINITION }}' \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ vars.PRIVATE_SUBNET_IDS }}],securityGroups=[${{ vars.API_SECURITY_GROUP_ID }}],assignPublicIp=DISABLED}" \
+            --overrides '{"containerOverrides":[{"name":"migrate","image":"${{ needs.build.outputs.image }}"}]}' \
+            --query 'tasks[0].taskArn' --output text)
+
+          aws ecs wait tasks-stopped --cluster "$cluster" --tasks "$task_arn"
+
+          code=$(aws ecs describe-tasks --cluster "$cluster" --tasks "$task_arn" \
+            --query 'tasks[0].containers[0].exitCode' --output text)
+
+          echo "Migration ket thuc voi ma $code"
+          test "$code" = "0"
+
+      - name: Cập nhật service api
+        run: |
+          set -euo pipefail
+          # Đăng ký một revision mới trỏ tới ảnh vừa dựng, giữ nguyên mọi thứ khác.
+          definition=$(aws ecs describe-task-definition \
+            --task-definition '${{ vars.API_TASK_DEFINITION }}' \
+            --query 'taskDefinition' --output json)
+
+          echo "$definition" \
+            | jq --arg image '${{ needs.build.outputs.image }}' \
+              '.containerDefinitions[0].image = $image
+               | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+            > task-definition.json
+
+          revision=$(aws ecs register-task-definition --cli-input-json file://task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+
+          echo "Revision moi: $revision"
+
+          aws ecs update-service \
+            --cluster '${{ vars.ECS_CLUSTER }}' \
+            --service '${{ vars.ECS_SERVICE }}' \
+            --task-definition "$revision" > /dev/null
+
+      # Chờ tới khi mọi task mới lành mạnh. Không chờ nghĩa là workflow báo xanh
+      # trong khi bản mới đang chết và circuit breaker đang quay lui.
+      - name: Chờ triển khai ổn định
+        run: |
+          aws ecs wait services-stable \
+            --cluster '${{ vars.ECS_CLUSTER }}' \
+            --services '${{ vars.ECS_SERVICE }}'
+
+      - name: Đồng bộ web tĩnh lên S3
+        run: |
+          set -euo pipefail
+          bucket='${{ vars.WEB_BUCKET }}'
+
+          # Tài sản có mã băm trong tên nên không bao giờ đổi nội dung: đẩy trước
+          # và cache dài. index.html đẩy sau cùng và không cache — nó là thứ trỏ
+          # tới bản tài sản mới, nên đảo thứ tự là khách gặp trang trỏ tới tệp
+          # chưa tồn tại.
+          aws s3 sync apps/web/dist "s3://$bucket" \
+            --exclude index.html \
+            --cache-control 'public, max-age=31536000, immutable' \
+            --delete
+
+          aws s3 cp apps/web/dist/index.html "s3://$bucket/index.html" \
+            --cache-control 'no-cache'
+
+      - name: Xoá cache CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id '${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}' \
+            --paths '/index.html' '/' > /dev/null

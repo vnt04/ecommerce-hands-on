@@ -1,0 +1,124 @@
+name: shopflow-prod
+
+# Chạy đúng bộ ảnh production trên máy, để kiểm chứng chúng trước khi đưa lên thật.
+#
+# Đây không phải bản mô tả hạ tầng production — hạ tầng nằm ở infra/ dưới dạng
+# Terraform. Tệp này chỉ dựng lại đúng những ảnh đó và nối chúng với nhau, với
+# ba khác biệt được nêu rõ ở từng chỗ: database, cache và kho ảnh chạy trong
+# container thay vì là dịch vụ quản trị của AWS.
+
+services:
+  # Trên AWS đây là RDS PostgreSQL.
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - prod-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Trên AWS đây là ElastiCache Redis.
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Trên AWS đây là S3.
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - '${PROD_MINIO_PORT:-9200}:9000'
+    volumes:
+      - prod-minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Chạy migration rồi thoát. api chờ service này chạy xong mới khởi động.
+  #
+  # Tách khỏi tiến trình phục vụ có chủ đích: chạy migration lúc ứng dụng khởi
+  # động nghĩa là mỗi bản sao đều cố chạy nó, và chúng giẫm lên nhau. Trên ECS
+  # đây là một task chạy một lần trước khi cập nhật service.
+  migrate:
+    image: shopflow-api:${IMAGE_TAG:-local}
+    build:
+      context: .
+      target: runtime
+    command: ['./node_modules/.bin/prisma', 'migrate', 'deploy']
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    image: shopflow-api:${IMAGE_TAG:-local}
+    build:
+      context: .
+      target: runtime
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: ${S3_REGION}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_PUBLIC_URL: http://localhost:${PROD_MINIO_PORT:-9200}
+    ports:
+      - '${PROD_API_PORT:-3100}:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('node:http').get('http://127.0.0.1:3000/api/v1/healthz', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Trên AWS đây là S3 kèm CloudFront. Xem infra/nginx/spa.conf.
+  web:
+    image: shopflow-web:${IMAGE_TAG:-local}
+    build:
+      context: .
+      target: web
+    ports:
+      - '${PROD_WEB_PORT:-8080}:80'
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  prod-db-data:
+  prod-minio-data:

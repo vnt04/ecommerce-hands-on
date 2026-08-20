@@ -44,7 +44,7 @@ Monorepo gồm `apps/web`, `apps/api` và `packages/shared`.
 | [S08](docs/steps/S08.md)   | Đặt hàng và trừ tồn kho            | Hoàn thành |
 | [S09](docs/steps/S09.md)   | Quản lý đơn hàng                   | Hoàn thành |
 | [S09b](docs/steps/S09b.md) | Quản trị sản phẩm và tồn kho       | Hoàn thành |
-| S10                        | Triển khai production              |            |
+| [S10](docs/steps/S10.md)   | Triển khai production              | Chờ AWS    |
 | S11                        | Giám sát và vận hành               |            |
 
 Dự án triển khai tuần tự theo bước. Mỗi bước có tài liệu riêng, được viết chi tiết ngay trước khi thực hiện và dựa trên kết quả thực tế của bước liền trước. S08 là bước có rủi ro cao nhất do liên quan đồng thời tới tiền và tồn kho.
