@@ -40,11 +40,14 @@ resource "aws_db_instance" "main" {
   backup_window           = "18:00-19:00"
   maintenance_window      = "Sun:19:30-Sun:20:30"
 
-  # Không cho xoá nhầm database production. Muốn xoá thật thì phải sửa dòng này
-  # trước, và việc phải sửa mã là một bước dừng có chủ đích.
-  deletion_protection       = true
-  skip_final_snapshot       = false
-  final_snapshot_identifier = "${local.name}-final"
+  # Không cho xoá nhầm database production. Mặc định của hai biến này giữ nguyên
+  # hành vi đó; hạ xuống là một hành động tường minh, phải gõ ra lúc chạy lệnh.
+  deletion_protection = var.deletion_protection
+  skip_final_snapshot = var.skip_final_snapshot
+
+  # Tên bản sao cuối gắn với môi trường, và bỏ trống khi không chụp: tên cố định
+  # làm vòng dựng–xoá thứ hai hỏng vì tên đã tồn tại.
+  final_snapshot_identifier = var.skip_final_snapshot ? null : "${local.name}-final"
 
   # Nâng cấp phiên bản nhỏ tự động, trong cửa sổ bảo trì đã nêu ở trên.
   auto_minor_version_upgrade = true
