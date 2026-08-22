@@ -31,6 +31,10 @@ tf validate
 
 ## Trước khi dựng lần đầu
 
+Chưa có tài khoản AWS thì đi theo [TRIEN-KHAI-LAN-DAU.md](TRIEN-KHAI-LAN-DAU.md): từ lúc đăng ký
+tài khoản tới lúc dựng được tầng đầu tiên, kèm cách dựng từng phần để không trả tiền cho thứ chưa
+cần. Phần dưới đây là bản tóm tắt điều kiện cần.
+
 Bốn thứ dưới đây phải có sẵn, và không thứ nào tự tạo ra được từ mã nguồn.
 
 | Hạng mục                | Cách chuẩn bị                                                                   |
