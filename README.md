@@ -64,7 +64,13 @@ docker compose up -d      # db, redis, api, web — cổng publish lấy từ .e
 ```bash
 docker compose exec api sh -c "cd apps/api && pnpm exec prisma migrate deploy"
 docker compose exec api sh -c "cd apps/api && pnpm build && pnpm exec prisma db seed"
+docker compose restart api
 ```
+
+Bước `restart` là bắt buộc, không phải cho chắc. Container api chạy `nest start --watch`; `pnpm build`
+ghi lại `apps/api/dist`, trình theo dõi thấy tệp đổi liền khởi động lại và vớ đúng lúc `dist/main`
+chưa tồn tại, rồi chết hẳn. Triệu chứng dễ đọc nhầm: seed vẫn báo thành công và `docker compose ps`
+vẫn hiện `running` — vì tiến trình `tsc --watch` còn sống — nhưng cổng api đã ngừng nhận kết nối.
 
 Dữ liệu mẫu gồm hai thiết kế, mỗi thiết kế ba màu × năm size. Cố ý có một tổ hợp bị tắt và một
 SKU hết hàng: dữ liệu quá sạch che mất đúng những trạng thái hay hỏng nhất.

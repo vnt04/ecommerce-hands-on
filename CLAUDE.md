@@ -33,15 +33,17 @@ Dừng lại và hỏi khi: cần thêm hoặc gỡ dependency, cần thay đổ
 
 ## 3. Môi trường
 
-Mã nguồn đặt tại `/home/ubuntu/workspace/2026_projects/ecommerce-handson` trong WSL. Claude Code chạy trên Windows.
+Mã nguồn đặt tại `/Users/designerfour/Documents/nghiepdev/ecommerce-hands-on` trên macOS. Lệnh phát triển chạy trực tiếp, không qua lớp bọc nào.
 
-Mọi lệnh phát triển thực thi bên trong WSL. Truy cập qua đường dẫn `\\wsl.localhost` làm hỏng symlink của pnpm và cơ chế theo dõi tệp của Vite. Ngoài ra hai môi trường đang chênh phiên bản pnpm (Windows 10.6.5, WSL 10.32.1).
+Docker Desktop tự ánh xạ uid nên `DOCKER_UID` và `DOCKER_GID` trong `.env` không có tác dụng ở đây. Bind mount của macOS không phát sinh sự kiện inotify đáng tin cậy, nên hot reload cần `WATCH_POLLING=true`.
+
+Lệnh Prisma cần kết nối thật phải chạy trong container, vì `DATABASE_URL` trong `.env` cố ý không chứa mật khẩu — xem phần quyết định trong `docs/steps/S08.md`:
 
 ```bash
-wsl -d Ubuntu -- bash -lc "cd /home/ubuntu/workspace/2026_projects/ecommerce-handson && <lệnh>"
+docker compose exec -w /app/apps/api api pnpm exec prisma <lệnh>
 ```
 
-Danh sách lệnh của dự án được bổ sung vào `README.md` sau khi hoàn thành S01. Trước thời điểm đó, không suy đoán tên script.
+Danh sách lệnh của dự án nằm trong `README.md`. Không suy đoán tên script.
 
 ## 4. Quy ước ngôn ngữ
 
