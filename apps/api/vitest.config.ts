@@ -22,7 +22,11 @@ export default defineConfig({
                    * loại test không phát hiện được lỗi nào.
                    */
                   include: ['src/modules/**/domain/**', 'src/common/**'],
-                  exclude: ['**/*.test.ts'],
+
+                  // swagger.ts chỉ nối các mảnh lại với nhau và cần một ứng dụng Nest
+                  // thật mới chạy được, nên nó thuộc nhóm kiểm bằng việc khởi động
+                  // được chứ không bằng phần trăm.
+                  exclude: ['**/*.test.ts', 'src/common/openapi/swagger.ts'],
 
                   thresholds: {
                         statements: 90,

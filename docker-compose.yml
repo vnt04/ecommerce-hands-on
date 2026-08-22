@@ -98,6 +98,9 @@ services:
       # Đường dẫn trình duyệt dùng để tải ảnh về. Khác điểm cuối bên trên vì
       # hostname `minio` chỉ phân giải được trong mạng nội bộ của Compose.
       S3_PUBLIC_URL: http://localhost:${MINIO_PORT}
+      # Bỏ trống trong .env thì trang tài liệu mở tự do. Đặt giá trị để thử lớp chặn.
+      SWAGGER_USER: ${SWAGGER_USER:-}
+      SWAGGER_PASSWORD: ${SWAGGER_PASSWORD:-}
     ports:
       - '${API_PORT}:3000'
     depends_on:

@@ -33,13 +33,16 @@ export function formatVnd(amount: Vnd): string {
  * có một bước chuyển đổi dù chọn kiểu gì. Thứ hai, dùng number sẽ mở lại cánh
  * cửa cho phép chia ra số thực mà trình biên dịch không chặn được.
  *
- * Schema này là nơi duy nhất định nghĩa phép chuyển đổi đó. Cấm endpoint tự
+ * Hai schema dưới đây là nơi duy nhất định nghĩa hình dạng đó. Cấm endpoint tự
  * viết bộ chuyển đổi riêng — lệch một chỗ là tiền hiển thị sai một chỗ.
  */
-export const vndFromJson = z
+export const vndJson = z
       .string()
       .regex(INTEGER_STRING, 'Số tiền phải là chuỗi chữ số nguyên, đơn vị đồng')
-      .transform((value): Vnd => BigInt(value));
+      .meta({ description: 'Số tiền: chuỗi chữ số nguyên, đơn vị đồng', example: '299000' });
+
+/** Chiều đọc vào: chuỗi chữ số sang bigint. */
+export const vndFromJson = vndJson.transform((value): Vnd => BigInt(value));
 
 /** Chiều ngược lại: bigint sang chuỗi để đưa vào response. */
 export function vndToJson(amount: Vnd): string {

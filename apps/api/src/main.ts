@@ -6,6 +6,7 @@ import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { EnvelopeInterceptor } from './common/interceptors/envelope.interceptor.js';
+import { setupSwagger } from './common/openapi/swagger.js';
 import { bigIntReplacer } from './common/serialization/json-replacer.js';
 import { loadEnv } from './config/env.js';
 
@@ -34,6 +35,8 @@ async function bootstrap(): Promise<void> {
 
       app.useGlobalInterceptors(new EnvelopeInterceptor());
       app.useGlobalFilters(new AllExceptionsFilter());
+
+      setupSwagger(app, env, API_PREFIX);
 
       // Cần thiết để onModuleDestroy chạy và Prisma đóng kết nối sạch khi container dừng.
       app.enableShutdownHooks();

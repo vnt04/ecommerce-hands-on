@@ -1,8 +1,12 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Req, Res } from '@nestjs/common';
-import type { CartMutationResult, CartView } from '@shopflow/shared';
+import { Body, Controller, Delete, Get, HttpStatus, NotFoundException, Param, Patch, Post, Req, Res } from '@nestjs/common';
+import { ApiBearerAuth, ApiCookieAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { cartMutationResultSchema, cartViewSchema, type CartMutationResult, type CartView } from '@shopflow/shared';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 
+import { ApiEnvelope, ApiErrors } from '../../common/openapi/envelope-response.decorator.js';
+import { BEARER_AUTH, CART_COOKIE_AUTH } from '../../common/openapi/swagger.js';
+import { ApiZodBody } from '../../common/openapi/zod-request.decorator.js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { Public } from '../auth/auth.decorators.js';
 import type { AuthenticatedUser } from '../auth/auth.service.js';
@@ -15,6 +19,8 @@ const CART_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_QUANTITY_PER_LINE = 99;
 
 const EMPTY_CART: CartView = { lines: [], subtotal: '0', itemCount: 0 };
+
+const IDENTIFIED_BY = 'Danh tính lấy từ access token nếu có, nếu không thì từ cookie `cart_token`. Cả hai đều không bắt buộc.';
 
 const addItemSchema = z.object({
       sku: z.string().trim().min(1),
@@ -34,12 +40,18 @@ type AuthedRequest = Request & { user?: AuthenticatedUser };
  * access token hợp lệ. Nhờ vậy một bộ đường dẫn duy nhất phục vụ được cả hai
  * loại khách, và giỏ của tài khoản luôn được ưu tiên hơn cookie ẩn danh.
  */
+@ApiTags('Giỏ hàng')
+@ApiBearerAuth(BEARER_AUTH)
+@ApiCookieAuth(CART_COOKIE_AUTH)
 @Public()
 @Controller('cart')
 export class CartController {
       constructor(private readonly carts: CartService) {}
 
       @Get()
+      @ApiOperation({ summary: 'Xem giỏ hàng', description: `${IDENTIFIED_BY} Chưa có giỏ thì trả về giỏ rỗng chứ không tạo mới.` })
+      @ApiEnvelope(cartViewSchema)
+      @ApiErrors()
       async view(@Req() request: AuthedRequest): Promise<CartView> {
             const cartId = await this.findCartId(request);
 
@@ -47,6 +59,13 @@ export class CartController {
       }
 
       @Post('items')
+      @ApiOperation({
+            summary: 'Thêm vào giỏ',
+            description: `${IDENTIFIED_BY} Khách ẩn danh chưa có giỏ sẽ được cấp cookie \`cart_token\`. Số lượng vượt tồn bị chặn xuống, và \`adjustedQuantity\` cho biết số thực nhận.`,
+      })
+      @ApiZodBody(addItemSchema)
+      @ApiEnvelope(cartMutationResultSchema, { status: HttpStatus.CREATED })
+      @ApiErrors(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND, HttpStatus.CONFLICT)
       async addItem(
             @Body(new ZodValidationPipe(addItemSchema)) input: z.infer<typeof addItemSchema>,
             @Req() request: AuthedRequest,
@@ -58,6 +77,11 @@ export class CartController {
       }
 
       @Patch('items/:sku')
+      @ApiOperation({ summary: 'Đổi số lượng một dòng', description: 'Số lượng 0 nghĩa là xoá dòng khỏi giỏ.' })
+      @ApiParam({ name: 'sku', example: 'ATT-BLK-L' })
+      @ApiZodBody(quantitySchema)
+      @ApiEnvelope(cartMutationResultSchema)
+      @ApiErrors(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND, HttpStatus.CONFLICT)
       async updateQuantity(
             @Param('sku') sku: string,
             @Body(new ZodValidationPipe(quantitySchema)) input: z.infer<typeof quantitySchema>,
@@ -67,6 +91,10 @@ export class CartController {
       }
 
       @Delete('items/:sku')
+      @ApiOperation({ summary: 'Xoá một dòng khỏi giỏ' })
+      @ApiParam({ name: 'sku', example: 'ATT-BLK-L' })
+      @ApiEnvelope(cartViewSchema)
+      @ApiErrors(HttpStatus.NOT_FOUND)
       async removeItem(@Param('sku') sku: string, @Req() request: AuthedRequest): Promise<CartView> {
             return this.carts.removeItem(await this.requireCartId(request), sku);
       }
