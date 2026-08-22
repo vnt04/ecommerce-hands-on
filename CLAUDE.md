@@ -27,7 +27,8 @@ Ràng buộc kỹ thuật phát sinh trong quá trình triển khai được b�
 4. Mỗi hạng mục chỉ được xem là hoàn thành khi tiêu chí nghiệm thu tương ứng được kiểm chứng bằng lệnh chạy thực tế, có output kèm theo.
 5. Không tuyên bố hoàn thành khi chưa có kết quả kiểm chứng.
 6. Mọi vấn đề cần người quyết phải được trình bày dưới dạng **danh sách phương án chọn được**, kèm phương án đề xuất và cơ sở của đề xuất. Không trình bày quyết định dưới dạng văn xuôi hoặc câu hỏi mở. Giới hạn mỗi lượt là 4 vấn đề, mỗi vấn đề 2–4 phương án; nhiều hơn thì chia thành nhiều lượt theo thứ tự ưu tiên.
-7. **Không tự động tạo commit.** Chỉ chạy `git commit` khi được yêu cầu rõ ràng. Áp dụng tương tự cho các thao tác ghi lên remote: `git push`, `git push --force`, tạo hoặc xoá nhánh. Sau khi hoàn thành công việc thì báo cáo thay đổi và chờ yêu cầu, không tự chốt lại bằng commit.
+7. **Không tự động tạo commit.** Chỉ chạy `git commit` khi được yêu cầu rõ ràng. Áp dụng tương tự cho các thao tác ghi lên remote: `git push`, `git push --force`, xoá nhánh. Sau khi hoàn thành công việc thì báo cáo thay đổi và chờ yêu cầu, không tự chốt lại bằng commit.
+8. **Sửa mã thì làm trên nhánh riêng.** Trước khi sửa, tạo nhánh từ `main` theo dạng `<type>/<mô-tả-ngắn>`, dùng chung bộ `type` với commit message. Không commit thẳng vào `main`. Đang có sẵn nhánh cho đúng công việc đó thì làm tiếp trên nhánh đó, không tạo thêm nhánh mới.
 
 Dừng lại và hỏi khi: cần thêm hoặc gỡ dependency, cần thay đổi lược đồ dữ liệu, cần thay đổi API contract, phát hiện tài liệu của bước không khớp thực tế, hoặc cách nhanh nhất để test đạt là sửa test.
 
