@@ -4,6 +4,15 @@ const DEFAULT_PORT = 3000;
 const MIN_JWT_SECRET_LENGTH = 32;
 
 /**
+ * Biến tuỳ chọn, hiểu chuỗi rỗng là không đặt.
+ *
+ * Docker Compose vẫn truyền biến bỏ trống xuống container dưới dạng chuỗi rỗng,
+ * nên nếu không quy đổi thì mỗi lần không dùng một tính năng tuỳ chọn là một lần
+ * ứng dụng từ chối khởi động.
+ */
+const optionalSecret = z.preprocess((value) => (value === '' ? undefined : value), z.string().min(1).optional());
+
+/**
  * Hợp đồng về biến môi trường. Ứng dụng đọc cấu hình qua đây, không đọc thẳng
  * process.env ở chỗ khác — nếu không thì một biến viết sai tên chỉ lộ ra khi
  * đúng nhánh mã đó chạy, có thể là nhiều ngày sau khi triển khai.
@@ -56,7 +65,28 @@ const envSchema = z.object({
        * của Compose không phân giải được từ máy khách.
        */
       S3_PUBLIC_URL: z.string().url(),
+
+      /**
+       * Thông tin đăng nhập trang tài liệu API.
+       *
+       * Tài liệu liệt kê cả nhóm `/admin` nên ở production nó phải nằm sau một lớp
+       * chặn; đặt được ở môi trường phát triển để thử chính lớp chặn đó, bỏ trống
+       * thì trang mở tự do.
+       */
+      SWAGGER_USER: optionalSecret,
+      SWAGGER_PASSWORD: optionalSecret,
 });
+
+/**
+ * Production bắt buộc có thông tin đăng nhập trang tài liệu.
+ *
+ * Tắt tài liệu khi thiếu cấu hình sẽ là một khác biệt im lặng giữa hai môi trường:
+ * trang biến mất mà không ai biết vì sao. Dừng khởi động thì lý do hiện ngay.
+ */
+const envSchemaWithDocsGuard = envSchema.refine(
+      (value) => value.NODE_ENV !== 'production' || (value.SWAGGER_USER !== undefined && value.SWAGGER_PASSWORD !== undefined),
+      { error: 'SWAGGER_USER và SWAGGER_PASSWORD là bắt buộc ở production', path: ['SWAGGER_USER'] },
+);
 
 export type Env = z.infer<typeof envSchema>;
 
@@ -67,7 +97,7 @@ export type Env = z.infer<typeof envSchema>;
  * còn hơn chạy tiếp rồi hỏng giữa chừng ở một nhánh không ai ngờ tới.
  */
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-      const result = envSchema.safeParse(source);
+      const result = envSchemaWithDocsGuard.safeParse(source);
 
       if (!result.success) {
             const details = result.error.issues.map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`).join('\n');

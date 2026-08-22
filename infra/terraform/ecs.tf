@@ -34,6 +34,8 @@ data "aws_iam_policy_document" "read_secrets" {
     resources = [
       aws_ssm_parameter.jwt_secret.arn,
       aws_ssm_parameter.database_url.arn,
+      aws_ssm_parameter.swagger_user.arn,
+      aws_ssm_parameter.swagger_password.arn,
     ]
   }
 }
@@ -178,6 +180,8 @@ resource "aws_ecs_task_definition" "api" {
     secrets = [
       { name = "JWT_SECRET", valueFrom = aws_ssm_parameter.jwt_secret.arn },
       { name = "DATABASE_URL", valueFrom = aws_ssm_parameter.database_url.arn },
+      { name = "SWAGGER_USER", valueFrom = aws_ssm_parameter.swagger_user.arn },
+      { name = "SWAGGER_PASSWORD", valueFrom = aws_ssm_parameter.swagger_password.arn },
     ]
 
     logConfiguration = {

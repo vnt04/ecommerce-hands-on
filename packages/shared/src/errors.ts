@@ -5,6 +5,10 @@
  *
  * Frontend ra quyết định dựa trên `code`, không bao giờ dựa trên `message`.
  */
+import { z } from 'zod';
+
+import { apiSchema } from './openapi-registry.js';
+
 export const ERROR_CODES = {
       VALIDATION_FAILED: 'VALIDATION_FAILED',
       NOT_FOUND: 'NOT_FOUND',
@@ -16,6 +20,8 @@ export const ERROR_CODES = {
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
+
+export const errorCodeSchema = apiSchema('ErrorCode', z.enum(ERROR_CODES));
 
 /** Thông báo mặc định hiển thị cho người dùng, tiếng Việt theo quy ước ngôn ngữ. */
 export const DEFAULT_ERROR_MESSAGES: Record<ErrorCode, string> = {

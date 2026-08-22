@@ -106,6 +106,18 @@ aws ssm put-parameter --overwrite \
       --name /shopflow/prod/DATABASE_URL \
       --type SecureString \
       --value "$url"
+
+# Thông tin đăng nhập trang tài liệu API tại /api/v1/docs. Thiếu một trong hai thì
+# api từ chối khởi động: tài liệu liệt kê cả nhóm /admin nên không để công khai.
+aws ssm put-parameter --overwrite \
+      --name /shopflow/prod/SWAGGER_USER \
+      --type SecureString \
+      --value "docs"
+
+aws ssm put-parameter --overwrite \
+      --name /shopflow/prod/SWAGGER_PASSWORD \
+      --type SecureString \
+      --value "$(openssl rand -base64 24)"
 ```
 
 Sau khi đổi secret phải khởi động lại service: ECS đọc secret lúc dựng container,

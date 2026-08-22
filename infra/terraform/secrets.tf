@@ -34,3 +34,32 @@ resource "aws_ssm_parameter" "database_url" {
     ignore_changes = [value]
   }
 }
+
+/**
+ * Thông tin đăng nhập trang tài liệu API.
+ *
+ * Tên đăng nhập cũng để dạng SecureString chứ không để thành biến môi trường
+ * thường: nó là một nửa của cặp thông tin, và biến môi trường thường thì
+ * `describe-task-definition` đọc được.
+ */
+resource "aws_ssm_parameter" "swagger_user" {
+  name        = "${local.secret_prefix}/SWAGGER_USER"
+  description = "Ten dang nhap trang tai lieu API. Thieu thi api tu choi khoi dong."
+  type        = "SecureString"
+  value       = "CHUA-DAT-XEM-infra-README"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "swagger_password" {
+  name        = "${local.secret_prefix}/SWAGGER_PASSWORD"
+  description = "Mat khau trang tai lieu API."
+  type        = "SecureString"
+  value       = "CHUA-DAT-XEM-infra-README"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

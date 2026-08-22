@@ -84,6 +84,10 @@ services:
       S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
       S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       S3_PUBLIC_URL: http://localhost:${PROD_MINIO_PORT:-9200}
+      # Không đặt giá trị mặc định: một mật khẩu ghi sẵn trong repo là mật khẩu ai
+      # cũng biết. Thiếu thì Compose dừng ngay với thông báo nêu đúng tên biến.
+      SWAGGER_USER: ${SWAGGER_USER:?bắt buộc ở production, đặt trong .env}
+      SWAGGER_PASSWORD: ${SWAGGER_PASSWORD:?bắt buộc ở production, đặt trong .env}
     ports:
       - '${PROD_API_PORT:-3100}:3000'
     depends_on:

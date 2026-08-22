@@ -1,6 +1,16 @@
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
-import type { AdminOrderSummary, Meta, OrderDetailWithHistory } from '@shopflow/shared';
+import { Body, Controller, Get, HttpStatus, Param, Patch, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+      adminOrderSummarySchema,
+      orderDetailWithHistorySchema,
+      type AdminOrderSummary,
+      type Meta,
+      type OrderDetailWithHistory,
+} from '@shopflow/shared';
 
+import { ApiEnvelope, ApiErrors } from '../../common/openapi/envelope-response.decorator.js';
+import { BEARER_AUTH } from '../../common/openapi/swagger.js';
+import { ApiZodBody, ApiZodQuery } from '../../common/openapi/zod-request.decorator.js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { CurrentUser, Roles } from '../auth/auth.decorators.js';
 import type { AuthenticatedUser } from '../auth/auth.service.js';
@@ -9,18 +19,29 @@ import { ADMIN_ORDERS_PAGE_SIZE, OrderAdminService } from './order-admin.service
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
+const ORDER_NUMBER_PARAM = { name: 'orderNumber', example: 'SF-20260822-0001' };
+
 /**
  * Khu vực quản trị đơn hàng.
  *
  * `@Roles(ADMIN)` đặt ở cấp lớp: quên đánh dấu một phương thức mới thì nó vẫn được
  * bảo vệ. Đây là chỗ dùng đầu tiên của `RolesGuard`, vốn có từ S06.
  */
+@ApiTags('Quản trị đơn hàng')
+@ApiBearerAuth(BEARER_AUTH)
 @Roles('ADMIN')
 @Controller('admin/orders')
 export class AdminOrdersController {
       constructor(private readonly admin: OrderAdminService) {}
 
       @Get()
+      @ApiOperation({
+            summary: 'Danh sách đơn hàng',
+            description: 'Lọc theo trạng thái, khoảng ngày đặt và từ khoá. Khoảng ngày hiểu theo giờ Việt Nam.',
+      })
+      @ApiZodQuery(adminOrderQuerySchema)
+      @ApiEnvelope(adminOrderSummarySchema, { paginated: true })
+      @ApiErrors(HttpStatus.BAD_REQUEST, HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN)
       async list(
             @Query(new ZodValidationPipe(adminOrderQuerySchema)) query: AdminOrderQueryInput,
       ): Promise<{ items: AdminOrderSummary[]; meta: Meta }> {
@@ -36,6 +57,10 @@ export class AdminOrdersController {
       }
 
       @Get(':orderNumber')
+      @ApiOperation({ summary: 'Chi tiết một đơn bất kỳ' })
+      @ApiParam(ORDER_NUMBER_PARAM)
+      @ApiEnvelope(orderDetailWithHistorySchema)
+      @ApiErrors(HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN, HttpStatus.NOT_FOUND)
       detail(@Param('orderNumber') orderNumber: string, @CurrentUser() user: AuthenticatedUser): Promise<OrderDetailWithHistory> {
             return this.admin.detail(orderNumber, { id: user.id, isAdmin: true });
       }
@@ -47,6 +72,15 @@ export class AdminOrdersController {
        * lượt và không có khoảng thời gian hiển thị dữ liệu cũ.
        */
       @Patch(':orderNumber')
+      @ApiOperation({
+            summary: 'Đổi trạng thái đơn hoặc trạng thái thanh toán',
+            description:
+                  'Nêu đúng một trong hai trường `status` và `paymentStatus`. Bước chuyển không hợp lệ trả 409. Trả về đơn sau thay đổi kèm lịch sử.',
+      })
+      @ApiParam(ORDER_NUMBER_PARAM)
+      @ApiZodBody(updateOrderSchema)
+      @ApiEnvelope(orderDetailWithHistorySchema)
+      @ApiErrors(HttpStatus.BAD_REQUEST, HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN, HttpStatus.NOT_FOUND, HttpStatus.CONFLICT)
       async update(
             @Param('orderNumber') orderNumber: string,
             @Body(new ZodValidationPipe(updateOrderSchema)) input: UpdateOrderBody,

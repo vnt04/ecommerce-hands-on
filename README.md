@@ -54,7 +54,7 @@ Dự án triển khai tuần tự theo bước. Mỗi bước có tài liệu ri
 Yêu cầu: Docker và Docker Compose. Node.js 22 trở lên trên máy chủ nếu muốn chạy lint, typecheck và test trực tiếp.
 
 ```bash
-cp .env.example .env      # mật khẩu database, JWT_SECRET, DOCKER_UID, DOCKER_GID, cổng
+cp .env.example .env      # mật khẩu database, JWT_SECRET, DOCKER_UID, DOCKER_GID, cổng, tài khoản trang docs
 pnpm install              # phục vụ IDE, git hook và các lệnh chạy trực tiếp
 docker compose up -d      # db, redis, api, web — cổng publish lấy từ .env
 ```
@@ -125,6 +125,22 @@ Bỏ qua bước này thì container vẫn chạy với bộ dependency cũ và 
 | ----------------- | ---------------------------------------------- | ----------------- |
 | `/api/v1/healthz` | Tiến trình còn phản hồi. Không chạm database   | Kiểm tra sống     |
 | `/api/v1/readyz`  | Có phục vụ được không, gồm cả kết nối database | Kiểm tra sẵn sàng |
+
+### Tài liệu API
+
+Hợp đồng HTTP nằm ở `http://localhost:${API_PORT}/api/v1/docs`, dựng từ chính schema Zod mà máy chủ dùng
+để kiểm tra dữ liệu vào và từ các kiểu dùng chung trong `@shopflow/shared`. Không có bước sinh tài liệu
+riêng: đổi hợp đồng mà quên sửa tài liệu là chuyện không xảy ra được.
+
+| Đường dẫn           | Nội dung                      |
+| ------------------- | ----------------------------- |
+| `/api/v1/docs`      | Giao diện đọc và thử endpoint |
+| `/api/v1/docs-json` | Đặc tả OpenAPI 3.0 dạng JSON  |
+| `/api/v1/docs-yaml` | Cùng nội dung, dạng YAML      |
+
+Bỏ trống `SWAGGER_USER` và `SWAGGER_PASSWORD` trong `.env` thì trang mở tự do, hợp cho máy phát triển.
+Đặt giá trị thì cả ba đường dẫn trên đều đòi Basic Auth. Ở production hai biến này là **bắt buộc** và
+thiếu thì api từ chối khởi động — tài liệu liệt kê cả nhóm `/admin` nên không được để công khai.
 
 ### Kho ảnh
 
