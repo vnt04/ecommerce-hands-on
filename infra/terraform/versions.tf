@@ -12,8 +12,10 @@ terraform {
   # trên máy cá nhân nghĩa là mất máy là mất khả năng vận hành hạ tầng, và hai
   # người chạy cùng lúc thì ghi đè lên nhau.
   #
-  # Bucket và bảng khoá phải tồn tại trước khi `terraform init` chạy lần đầu.
-  # Xem infra/README.md, mục "Khởi tạo lần đầu".
+  # Bucket phải tồn tại trước khi `terraform init` chạy lần đầu, mã nguồn không
+  # tự tạo ra được. Khoá chống hai người apply cùng lúc do chính S3 giữ
+  # (use_lockfile), không cần bảng DynamoDB.
+  # Xem infra/README.md, mục "Bucket chứa trạng thái Terraform".
   backend "s3" {
     key          = "shopflow/prod/terraform.tfstate"
     encrypt      = true

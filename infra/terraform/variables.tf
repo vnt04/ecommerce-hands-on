@@ -100,7 +100,7 @@ variable "deletion_protection" {
 
             Mặc định bật, và giữ nguyên như vậy ở mọi môi trường thật. Chỉ hạ xuống
             cho môi trường dựng lên để học rồi xoá đi trong ngày — xem
-            infra/TRIEN-KHAI-LAN-DAU.md.
+            infra/aws-deploy-guide.md.
       EOT
   type        = bool
   default     = true
