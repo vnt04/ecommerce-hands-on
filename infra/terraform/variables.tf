@@ -93,3 +93,27 @@ variable "log_retention_days" {
   type        = number
   default     = 30
 }
+
+variable "deletion_protection" {
+  description = <<-EOT
+            Chặn xoá database.
+
+            Mặc định bật, và giữ nguyên như vậy ở mọi môi trường thật. Chỉ hạ xuống
+            cho môi trường dựng lên để học rồi xoá đi trong ngày — xem
+            infra/TRIEN-KHAI-LAN-DAU.md.
+      EOT
+  type        = bool
+  default     = true
+}
+
+variable "skip_final_snapshot" {
+  description = <<-EOT
+            Bỏ qua bản sao cuối khi xoá database.
+
+            Mặc định tắt: xoá một database thật mà không giữ lại gì là chuyện không
+            hoàn tác được. Bật cho môi trường học, ở đó bản sao cuối chỉ tích tụ và
+            còn làm vòng dựng–xoá kế tiếp hỏng vì trùng tên.
+      EOT
+  type        = bool
+  default     = false
+}
