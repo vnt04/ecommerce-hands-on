@@ -31,6 +31,10 @@ tf validate
 
 ## Trước khi dựng lần đầu
 
+Chưa có tài khoản AWS thì đi theo [aws-deploy-guide.md](aws-deploy-guide.md): từ lúc đăng ký
+tài khoản tới lúc dựng được tầng đầu tiên, kèm cách dựng từng phần để không trả tiền cho thứ chưa
+cần. Phần dưới đây là bản tóm tắt điều kiện cần.
+
 Bốn thứ dưới đây phải có sẵn, và không thứ nào tự tạo ra được từ mã nguồn.
 
 | Hạng mục                | Cách chuẩn bị                                                                   |
@@ -46,15 +50,22 @@ Trạng thái chứa mọi thứ đã dựng. Để nó trên máy cá nhân ngh
 khả năng vận hành hạ tầng, và hai người chạy cùng lúc thì ghi đè lên nhau.
 
 ```bash
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
 aws s3api create-bucket \
-      --bucket shopflow-terraform-state \
+      --bucket shopflow-terraform-state-$ACCOUNT_ID \
       --region ap-southeast-1 \
       --create-bucket-configuration LocationConstraint=ap-southeast-1
 
 aws s3api put-bucket-versioning \
-      --bucket shopflow-terraform-state \
+      --bucket shopflow-terraform-state-$ACCOUNT_ID \
       --versioning-configuration Status=Enabled
 ```
+
+Tên bucket S3 dùng chung namespace cho toàn bộ khách hàng AWS, không riêng tài
+khoản này. `shopflow-terraform-state` trần đã có người lấy mất, nên hậu tố là bắt
+buộc chứ không phải phòng xa. Lấy account id làm hậu tố thì tên tự dựng được ở
+mọi chỗ cần dùng, khỏi phải nhớ.
 
 Bật versioning không phải cho đủ thủ tục: một lần `terraform apply` hỏng giữa
 chừng có thể để lại tệp trạng thái không đọc được, và bản trước là đường lùi duy
@@ -65,8 +76,10 @@ nhất.
 ```bash
 cd infra/terraform
 
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
 tf init \
-      -backend-config=bucket=shopflow-terraform-state \
+      -backend-config=bucket=shopflow-terraform-state-$ACCOUNT_ID \
       -backend-config=region=ap-southeast-1
 
 tf plan \
