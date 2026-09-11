@@ -79,7 +79,7 @@ async function requestNewAccessToken(): Promise<boolean> {
             return false;
       }
 
-      const body = (await response.json()) as Envelope<{ accessToken: string }>;
+      const body = await readEnvelope<{ accessToken: string }>(response);
 
       if (!body.success) {
             setAccessToken(undefined);
@@ -111,8 +111,22 @@ async function send(path: string, init: RequestInit): Promise<Response> {
       return fetch('/api/v1' + path, { ...init, headers });
 }
 
+async function readEnvelope<T>(response: Response): Promise<Envelope<T> & { meta?: Meta }> {
+      const text = await response.text();
+
+      if (text.trim() === '') {
+            throw new ApiError('NETWORK_ERROR', `Máy chủ không trả về dữ liệu (HTTP ${response.status}). Hãy kiểm tra service API.`);
+      }
+
+      try {
+            return JSON.parse(text) as Envelope<T> & { meta?: Meta };
+      } catch {
+            throw new ApiError('NETWORK_ERROR', `Máy chủ trả về dữ liệu không hợp lệ (HTTP ${response.status}). Hãy kiểm tra service API.`);
+      }
+}
+
 async function parse<T>(response: Response): Promise<ApiResult<T>> {
-      const body = (await response.json()) as Envelope<T> & { meta?: Meta };
+      const body = await readEnvelope<T>(response);
 
       if (!body.success) {
             throw new ApiError(body.error.code, body.error.message, body.error.details);

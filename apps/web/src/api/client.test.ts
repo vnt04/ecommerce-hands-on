@@ -7,7 +7,11 @@ type FetchCall = { url: string; init?: RequestInit };
 let calls: FetchCall[];
 
 function jsonResponse(body: unknown, status = 200): Response {
-      return { ok: status < 400, status, json: () => Promise.resolve(body) } as Response;
+      return { ok: status < 400, status, text: () => Promise.resolve(JSON.stringify(body)) } as Response;
+}
+
+function textResponse(body: string, status = 200): Response {
+      return { ok: status < 400, status, text: () => Promise.resolve(body) } as Response;
 }
 
 function stubFetch(handler: (call: FetchCall) => Response | Promise<Response>): void {
@@ -65,6 +69,24 @@ describe('apiGet', () => {
             vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
 
             await expect(apiGet('/products')).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
+      });
+
+      test('báo lỗi API rõ ràng khi proxy trả response rỗng', async () => {
+            stubFetch(() => textResponse('', 500));
+
+            await expect(apiGet('/products')).rejects.toMatchObject({
+                  code: 'NETWORK_ERROR',
+                  message: 'Máy chủ không trả về dữ liệu (HTTP 500). Hãy kiểm tra service API.',
+            });
+      });
+
+      test('báo lỗi API rõ ràng khi response không phải JSON', async () => {
+            stubFetch(() => textResponse('Bad Gateway', 502));
+
+            await expect(apiGet('/products')).rejects.toMatchObject({
+                  code: 'NETWORK_ERROR',
+                  message: 'Máy chủ trả về dữ liệu không hợp lệ (HTTP 502). Hãy kiểm tra service API.',
+            });
       });
 });
 
