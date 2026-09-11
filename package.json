@@ -11,6 +11,7 @@
             "prepare": "husky",
             "build": "pnpm -r build",
             "dev": "pnpm --filter @shopflow/shared build && pnpm -r --parallel dev",
+            "db:seed:large": "docker compose exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -v project_mode=true -v confirm_reset=true -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\"' < generate_ecommerce_practice.sql",
             "typecheck": "pnpm -r typecheck",
             "test": "pnpm -r test",
             "lint": "eslint .",

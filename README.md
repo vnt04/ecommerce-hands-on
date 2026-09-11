@@ -75,6 +75,20 @@ vẫn hiện `running` — vì tiến trình `tsc --watch` còn sống — nhưn
 Dữ liệu mẫu gồm hai thiết kế, mỗi thiết kế ba màu × năm size. Cố ý có một tổ hợp bị tắt và một
 SKU hết hàng: dữ liệu quá sạch che mất đúng những trạng thái hay hỏng nhất.
 
+### Dữ liệu lớn để luyện SQL
+
+Sau khi migration đã chạy, có thể thay toàn bộ dữ liệu mẫu bằng khoảng 16,5 triệu dòng dữ liệu
+e-commerce:
+
+```bash
+pnpm db:seed:large
+```
+
+Lệnh này **TRUNCATE toàn bộ 17 bảng nghiệp vụ trong schema `public`** rồi sinh lại dữ liệu; không
+chạy trên database cần giữ dữ liệu. Có thể đổi quy mô bằng cách chạy trực tiếp lệnh `psql` được
+mô tả ở đầu [`generate_ecommerce_practice.sql`](generate_ecommerce_practice.sql). Nên dành tối
+thiểu 10–20 GB dung lượng trống cho cấu hình mặc định.
+
 Mở `http://localhost:5173`. Trang hiển thị trạng thái trả về từ `/api/v1/healthz` và một số tiền định dạng bởi `@shopflow/shared`.
 
 Lấy `DOCKER_UID` và `DOCKER_GID` bằng `id -u` và `id -g`. Nếu bỏ qua bước này trên Linux hoặc WSL, tệp do container tạo ra sẽ không sửa được từ máy chủ. Trên macOS và Windows dùng Docker Desktop thì không cần quan tâm.
@@ -87,6 +101,7 @@ Hot reload không hoạt động trên macOS hoặc Windows thì đặt `WATCH_P
 | ---------------------------- | -------------------------------------------------------------- |
 | `docker compose up -d`       | Khởi động database, api và web                                 |
 | `docker compose logs -f api` | Xem log một service                                            |
+| `pnpm db:seed:large`         | Xoá dữ liệu cũ và sinh dataset lớn để luyện SQL                |
 | `docker compose down`        | Dừng. Thêm `-v` để xoá luôn dữ liệu database                   |
 | `docker compose build`       | Dựng lại image. **Chạy cho cả ba service**, xem lưu ý bên dưới |
 | `pnpm lint`                  | ESLint toàn bộ workspace                                       |
