@@ -15,5 +15,12 @@ khác cho bài tập.
 
 ## Chạy query từ DBeaver
 
+Các đề bài được lưu trong thư mục [`exercises/`](exercises/):
+
+- [SQLG-001](exercises/SQLG-001.md): đơn chưa thanh toán.
+- [SQLG-002](exercises/SQLG-002.md): phân loại khách hàng và ghi chú.
+- [SQLG-003](exercises/SQLG-003.md): sản phẩm theo danh mục.
+- [SQLG-004](exercises/SQLG-004.md): đơn hàng và tài khoản tùy chọn.
+
 Kết nối PostgreSQL ở `localhost`, database/user/port lấy từ `.env`. Các bảng nghiệp vụ nằm trong
 schema `public`.
