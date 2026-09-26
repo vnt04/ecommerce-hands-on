@@ -23,6 +23,10 @@ Các đề bài được lưu trong thư mục [`exercises/`](exercises/):
 - [SQLG-004](exercises/SQLG-004.md): đơn hàng và tài khoản tùy chọn.
 - [SQLG-005](exercises/SQLG-005.md): số đơn và tổng giá trị theo trạng thái.
 - [SQLG-006](exercises/SQLG-006.md): khách hàng có nhiều đơn đã thanh toán.
+- [SQLG-007](exercises/SQLG-007.md): báo cáo cả khách không có đơn phù hợp.
+- [SQLG-008](exercises/SQLG-008.md): biến thể sắp hết hàng theo sản phẩm.
+- [SQLG-009](exercises/SQLG-009.md): đơn có nhiều sản phẩm và email tài khoản.
+- [SQLG-010](exercises/SQLG-010.md): khách hàng kèm giỏ hàng hết hạn nếu có.
 
 Kết nối PostgreSQL ở `localhost`, database/user/port lấy từ `.env`. Các bảng nghiệp vụ nằm trong
 schema `public`.
