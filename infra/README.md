@@ -1,7 +1,8 @@
 # Hạ tầng và vận hành
 
-Hạ tầng production của ShopFlow, mô tả bằng Terraform. Quyết định về hình thái và
-lý do chọn nằm ở [docs/steps/S10.md](../docs/steps/S10.md) mục 5.
+Cấu hình hạ tầng production của ShopFlow, mô tả bằng Terraform.
+Tài liệu này hướng dẫn triển khai và vận hành; việc triển khai AWS thật và rollback
+chưa được xác nhận.
 
 ```
 ap-southeast-1

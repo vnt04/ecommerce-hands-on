@@ -1,190 +1,125 @@
 # ShopFlow
 
-Cửa hàng bán áo thun in sẵn trực tuyến cho thị trường Việt Nam.
+Ứng dụng thương mại điện tử bán áo thun in sẵn cho thị trường Việt Nam, gồm cửa hàng
+cho khách và khu vực quản trị sản phẩm, tồn kho, đơn hàng.
 
-Áo được in trước và lưu kho theo từng cặp màu × size. Khách hàng chọn thiết kế, chọn màu và size, đặt hàng. Quản trị viên quản lý thiết kế, tồn kho theo SKU và xử lý đơn hàng.
+Dự án full-stack với trọng tâm backend: xử lý đặt hàng đồng thời, chống tạo trùng đơn
+và giữ chính xác thông tin mua hàng. Tồn kho được quản lý theo từng SKU màu × size.
+Ba ưu tiên thiết kế là **đơn hàng và tiền phải chính xác → một người vận hành được →
+chi phí tương xứng lưu lượng**.
 
-## Phạm vi
+## Chức năng chính
 
-| Thuộc phạm vi                              | Ngoài phạm vi                   |
-| ------------------------------------------ | ------------------------------- |
-| Catalog thiết kế có biến thể màu × size    | In theo đơn (print-on-demand)   |
-| Giỏ hàng, kể cả khách chưa đăng nhập       | Khách tự tải lên thiết kế       |
-| Đặt hàng, theo dõi đơn, email giao dịch    | Marketplace đa nhà bán          |
-| Quản trị thiết kế, tồn kho, đơn hàng       | Tự lưu trữ và xử lý dữ liệu thẻ |
-| Báo cáo doanh thu và phân bổ bán theo size | Đa ngôn ngữ, đa tiền tệ         |
+| Khách hàng                                         | Quản trị viên                                 |
+| -------------------------------------------------- | --------------------------------------------- |
+| Tìm kiếm, lọc sản phẩm; chọn màu và size           | Tạo, cập nhật và lưu trữ sản phẩm             |
+| Giỏ hàng khi chưa đăng nhập; gộp giỏ khi đăng nhập | Quản lý biến thể, giá, tồn kho và ảnh         |
+| Đăng ký, đăng nhập và duy trì phiên                | Xem, lọc và xử lý đơn hàng                    |
+| Đặt hàng, xem lịch sử và chi tiết đơn              | Chuyển trạng thái đơn theo quy tắc nghiệp vụ  |
+| Hủy đơn khi còn chờ xác nhận                       | Hủy đơn ở trạng thái cho phép và hoàn tồn kho |
 
-## Nguyên tắc đánh đổi
+## Điểm kỹ thuật nổi bật
 
-Ba tiêu chí xếp theo thứ tự ưu tiên, dùng để phân xử mọi lựa chọn kỹ thuật:
+- **Chống bán vượt tồn:** trừ tồn có điều kiện trong transaction. Có
+  [integration test](apps/api/src/modules/orders/orders.service.int.test.ts) cho
+  20 yêu cầu cùng mua SKU chỉ còn một sản phẩm.
+- **Chống tạo trùng đơn:** dùng idempotency key để trả lại đơn đã tạo khi client
+  gửi lại yêu cầu; không trừ tồn lần hai.
+- **Giữ đúng dữ liệu mua hàng:** lưu tên, SKU và giá tại thời điểm đặt trên dòng đơn.
+  Tiền VND dùng số nguyên, truyền qua JSON dạng chuỗi.
+- **Xác thực và phân quyền phía API:** JWT, refresh token trong cookie HttpOnly,
+  kiểm tra vai trò và quyền sở hữu đơn hàng; Redis lưu bộ đếm rate limit.
+- **Hợp đồng dùng chung:** schema Zod và kiểu dữ liệu trong `packages/shared` phục
+  vụ frontend, backend và tài liệu OpenAPI. Frontend dùng Pinia cho phiên đăng nhập
+  và TanStack Query cho dữ liệu từ API.
 
-1. Đơn hàng và tiền phải chính xác. Không bán vượt tồn, không tạo trùng đơn, giá trên đơn đã đặt không thay đổi khi bảng giá thay đổi.
-2. Một người vận hành được. Triển khai tự động, rollback nhanh, log và cảnh báo đủ để xác định điểm hỏng.
-3. Chi phí tương xứng lưu lượng thực tế.
+## Công nghệ và kiến trúc
 
-Khi hai phương án tương đương, chọn phương án đơn giản hơn về mặt vận hành.
+| Thành phần          | Công nghệ                                                            |
+| ------------------- | -------------------------------------------------------------------- |
+| Frontend            | Vue 3, TypeScript, Vite, Tailwind CSS, Pinia, TanStack Query         |
+| Backend             | NestJS, Prisma, Zod, OpenAPI/Swagger                                 |
+| Dữ liệu             | PostgreSQL 16, Redis                                                 |
+| Ảnh sản phẩm        | MinIO khi phát triển; tích hợp S3 qua AWS SDK                        |
+| Kiểm thử            | Vitest, Vue Test Utils, Testcontainers                               |
+| Build và triển khai | pnpm workspaces, Docker, GitHub Actions; cấu hình AWS bằng Terraform |
 
-## Công nghệ
+Backend tổ chức theo các module Auth, Catalog, Cart và Orders trong cùng một ứng dụng NestJS.
 
-Vue 3 + Vite (SPA) · NestJS · Prisma · PostgreSQL 16 · Docker · AWS + Terraform · GitHub Actions
-
-Monorepo gồm `apps/web`, `apps/api` và `packages/shared`.
-
-## Lộ trình
-
-| Bước                       | Nội dung                           | Trạng thái |
-| -------------------------- | ---------------------------------- | ---------- |
-| [S01](docs/steps/S01.md)   | Khởi tạo khung dự án               | Hoàn thành |
-| [S02](docs/steps/S02.md)   | Khung ứng dụng và cơ sở dữ liệu    | Hoàn thành |
-| [S03](docs/steps/S03.md)   | Lược đồ sản phẩm và logic biến thể | Hoàn thành |
-| [S04](docs/steps/S04.md)   | API catalog công khai              | Hoàn thành |
-| [S05](docs/steps/S05.md)   | Giao diện khách cho catalog        | Hoàn thành |
-| [S06](docs/steps/S06.md)   | Tài khoản và xác thực              | Hoàn thành |
-| [S07](docs/steps/S07.md)   | Giỏ hàng                           | Hoàn thành |
-| [S08](docs/steps/S08.md)   | Đặt hàng và trừ tồn kho            | Hoàn thành |
-| [S09](docs/steps/S09.md)   | Quản lý đơn hàng                   | Hoàn thành |
-| [S09b](docs/steps/S09b.md) | Quản trị sản phẩm và tồn kho       | Hoàn thành |
-| [S10](docs/steps/S10.md)   | Triển khai production              | Chờ AWS    |
-| S11                        | Giám sát và vận hành               |            |
-
-Dự án triển khai tuần tự theo bước. Mỗi bước có tài liệu riêng, được viết chi tiết ngay trước khi thực hiện và dựa trên kết quả thực tế của bước liền trước. S08 là bước có rủi ro cao nhất do liên quan đồng thời tới tiền và tồn kho.
-
-## Chạy dự án
-
-Yêu cầu: Docker và Docker Compose. Node.js 22 trở lên trên máy chủ nếu muốn chạy lint, typecheck và test trực tiếp.
-
-```bash
-cp .env.example .env      # mật khẩu database, JWT_SECRET, DOCKER_UID, DOCKER_GID, cổng, tài khoản trang docs
-pnpm install              # phục vụ IDE, git hook và các lệnh chạy trực tiếp
-docker compose up -d      # db, redis, api, web — cổng publish lấy từ .env
+```mermaid
+flowchart LR
+    Web[Vue SPA] -->|HTTP API| API[NestJS]
+    API -->|Prisma / SQL| DB[(PostgreSQL)]
+    API -->|Rate limit| Redis[(Redis)]
+    API -->|Upload ảnh| Storage[MinIO / S3]
+    Web -->|Tải ảnh| Storage
+    Shared[Shared schemas và types] -.-> Web
+    Shared -.-> API
 ```
 
-Áp dụng migration và nạp dữ liệu mẫu:
+```text
+apps/web/        Giao diện khách hàng và quản trị
+apps/api/        API, nghiệp vụ, Prisma schema và migrations
+packages/shared/ Schema, kiểu dữ liệu và hàm dùng chung
+infra/           Terraform và cấu hình phục vụ web
+docs/            Hướng dẫn phát triển và bài tập SQL
+```
+
+## Chạy nhanh
+
+Yêu cầu: Docker + Docker Compose, Node.js 22 trở lên và pnpm theo phiên bản
+`packageManager` trong [package.json](package.json).
 
 ```bash
-docker compose exec api sh -c "cd apps/api && pnpm exec prisma migrate deploy"
-docker compose exec api sh -c "cd apps/api && pnpm build && pnpm exec prisma db seed"
+cp .env.example .env
+```
+
+Điền `POSTGRES_PASSWORD`, `JWT_SECRET`, `MINIO_ROOT_PASSWORD` trong `.env`.
+Trên Linux/WSL dùng Docker trực tiếp, đặt `DOCKER_UID` và `DOCKER_GID` theo kết quả
+`id -u` và `id -g`. Xem [hướng dẫn môi trường](docs/development.md) nếu cần đổi cổng.
+
+```bash
+pnpm install --frozen-lockfile
+docker compose up -d --build
+```
+
+Khi API container đã khởi động, áp dụng migration và nạp dữ liệu mẫu:
+
+```bash
+docker compose exec -w /app/apps/api api pnpm exec prisma migrate deploy
+docker compose exec -w /app/apps/api api pnpm build
+docker compose exec -w /app/apps/api api pnpm exec prisma db seed
 docker compose restart api
 ```
 
-Bước `restart` là bắt buộc, không phải cho chắc. Container api chạy `nest start --watch`; `pnpm build`
-ghi lại `apps/api/dist`, trình theo dõi thấy tệp đổi liền khởi động lại và vớ đúng lúc `dist/main`
-chưa tồn tại, rồi chết hẳn. Triệu chứng dễ đọc nhầm: seed vẫn báo thành công và `docker compose ps`
-vẫn hiện `running` — vì tiến trình `tsc --watch` còn sống — nhưng cổng api đã ngừng nhận kết nối.
+Giữ bước restart sau build/seed để khởi động lại API ở chế độ watch.
+Dữ liệu mẫu có hai thiết kế, gồm cả SKU hết hàng và tổ hợp bị tắt.
 
-Dữ liệu mẫu gồm hai thiết kế, mỗi thiết kế ba màu × năm size. Cố ý có một tổ hợp bị tắt và một
-SKU hết hàng: dữ liệu quá sạch che mất đúng những trạng thái hay hỏng nhất.
+Với cổng mặc định:
 
-### Dữ liệu lớn để luyện SQL
+- Cửa hàng: [localhost:5173](http://localhost:5173).
+- Swagger: [localhost:3000/api/v1/docs](http://localhost:3000/api/v1/docs).
+- Tài khoản quản trị local và cách kiểm tra dịch vụ: [hướng dẫn phát triển](docs/development.md).
 
-Sau khi migration đã chạy, có thể thay toàn bộ dữ liệu mẫu bằng khoảng 16,5 triệu dòng dữ liệu
-e-commerce:
+## Kiểm thử
 
 ```bash
-pnpm db:seed:large
+pnpm --filter @shopflow/shared build
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm --filter @shopflow/api test:int
+pnpm build
 ```
 
-Lệnh này **TRUNCATE toàn bộ 17 bảng nghiệp vụ trong schema `public`** rồi sinh lại dữ liệu; không
-chạy trên database cần giữ dữ liệu. Có thể đổi quy mô bằng cách chạy trực tiếp lệnh `psql` được
-mô tả ở đầu [`generate_ecommerce_practice.sql`](generate_ecommerce_practice.sql). Nên dành tối
-thiểu 10–20 GB dung lượng trống cho cấu hình mặc định.
-
-Mở `http://localhost:5173`. Trang hiển thị trạng thái trả về từ `/api/v1/healthz` và một số tiền định dạng bởi `@shopflow/shared`.
-
-Lấy `DOCKER_UID` và `DOCKER_GID` bằng `id -u` và `id -g`. Nếu bỏ qua bước này trên Linux hoặc WSL, tệp do container tạo ra sẽ không sửa được từ máy chủ. Trên macOS và Windows dùng Docker Desktop thì không cần quan tâm.
-
-Hot reload không hoạt động trên macOS hoặc Windows thì đặt `WATCH_POLLING=true` trong `.env` rồi khởi động lại.
-
-### Lệnh
-
-| Lệnh                         | Tác dụng                                                       |
-| ---------------------------- | -------------------------------------------------------------- |
-| `docker compose up -d`       | Khởi động database, api và web                                 |
-| `docker compose logs -f api` | Xem log một service                                            |
-| `pnpm db:seed:large`         | Xoá dữ liệu cũ và sinh dataset lớn để luyện SQL                |
-| `docker compose down`        | Dừng. Thêm `-v` để xoá luôn dữ liệu database                   |
-| `docker compose build`       | Dựng lại image. **Chạy cho cả ba service**, xem lưu ý bên dưới |
-| `pnpm lint`                  | ESLint toàn bộ workspace                                       |
-| `pnpm typecheck`             | Kiểm tra kiểu                                                  |
-| `pnpm test`                  | Chạy toàn bộ test                                              |
-| `pnpm build`                 | Build cả ba package                                            |
-| `pnpm format:write`          | Định dạng lại mã nguồn bằng Prettier                           |
-
-Chạy `pnpm build` hoặc `pnpm typecheck` lần đầu trên máy sạch cần `@shopflow/shared` được biên dịch trước: `pnpm --filter @shopflow/shared build`.
-
-### Cổng bị chiếm
-
-Cổng publish đọc từ `.env`. Máy đang chạy dự án khác giữ cùng cổng thì đổi `API_PORT`,
-`WEB_PORT`, `REDIS_PORT` hoặc `POSTGRES_PORT` — bên trong Compose các service vẫn dùng cổng
-chuẩn nên không phải sửa gì thêm.
-
-Triệu chứng khi quên đổi rất dễ gây nhầm: container vẫn chạy, nhưng mở trang lại thấy nội dung
-của ứng dụng khác.
-
-### Sau khi thêm hoặc gỡ dependency
-
-Thư mục `node_modules` trong container là named volume, mà Docker chỉ nạp nội dung từ image
-khi volume còn rỗng. Dựng lại image thôi là chưa đủ, phải xoá volume:
-
-```bash
-docker compose down -v
-docker compose build      # cả ba service, vì chúng dùng chung volume node_modules
-docker compose up -d
-```
-
-Bỏ qua bước này thì container vẫn chạy với bộ dependency cũ và báo lỗi không tìm thấy module.
-
-### Endpoint kiểm tra
-
-| Đường dẫn         | Kiểm tra gì                                    | Dùng cho          |
-| ----------------- | ---------------------------------------------- | ----------------- |
-| `/api/v1/healthz` | Tiến trình còn phản hồi. Không chạm database   | Kiểm tra sống     |
-| `/api/v1/readyz`  | Có phục vụ được không, gồm cả kết nối database | Kiểm tra sẵn sàng |
-
-### Tài liệu API
-
-Hợp đồng HTTP nằm ở `http://localhost:${API_PORT}/api/v1/docs`, dựng từ chính schema Zod mà máy chủ dùng
-để kiểm tra dữ liệu vào và từ các kiểu dùng chung trong `@shopflow/shared`. Không có bước sinh tài liệu
-riêng: đổi hợp đồng mà quên sửa tài liệu là chuyện không xảy ra được.
-
-| Đường dẫn           | Nội dung                      |
-| ------------------- | ----------------------------- |
-| `/api/v1/docs`      | Giao diện đọc và thử endpoint |
-| `/api/v1/docs-json` | Đặc tả OpenAPI 3.0 dạng JSON  |
-| `/api/v1/docs-yaml` | Cùng nội dung, dạng YAML      |
-
-Bỏ trống `SWAGGER_USER` và `SWAGGER_PASSWORD` trong `.env` thì trang mở tự do, hợp cho máy phát triển.
-Đặt giá trị thì cả ba đường dẫn trên đều đòi Basic Auth. Ở production hai biến này là **bắt buộc** và
-thiếu thì api từ chối khởi động — tài liệu liệt kê cả nhóm `/admin` nên không được để công khai.
-
-### Kho ảnh
-
-Ảnh sản phẩm nằm trên MinIO, một kho nói giao thức S3. Bảng điều khiển của nó ở
-`http://localhost:${MINIO_CONSOLE_PORT}`, đăng nhập bằng `MINIO_ROOT_USER` và `MINIO_ROOT_PASSWORD`
-trong `.env`.
-
-Ở production kho này là S3 thật. Mã trong `apps/api` không đổi: chỉ đổi `S3_ENDPOINT`, `S3_REGION`,
-cặp khoá và `S3_PUBLIC_URL`.
-
-Hai endpoint tách biệt có chủ đích: nếu kiểm tra sống phụ thuộc database thì một sự cố
-database sẽ khiến bộ điều phối khởi động lại container liên tục trong khi ứng dụng vẫn khoẻ.
-
-### Quy ước commit
-
-Conventional Commits, kiểm tra tự động lúc commit:
-
-```
-feat(api): add health endpoint
-fix(web): correct proxy target inside container
-```
-
-Hook trước khi commit chạy ESLint, Prettier và quét secret trên các tệp được stage.
+`pnpm test` chạy unit/component test. Integration test chạy riêng, dùng
+Testcontainers dựng PostgreSQL và áp dụng migrations thật; cần Docker hoạt động.
+[CI](.github/workflows/ci.yml) cấu hình các bước lint, typecheck, test và build.
 
 ## Tài liệu
 
-| Nội dung                                   | Vị trí                             |
-| ------------------------------------------ | ---------------------------------- |
-| Hướng dẫn cho AI làm việc trong repository | [CLAUDE.md](CLAUDE.md)             |
-| Bước đang thực hiện                        | [docs/steps/](docs/steps/)         |
-| Quyết định kiến trúc và lý do              | [docs/decisions/](docs/decisions/) |
-| Tài liệu đã ngừng sử dụng, giữ để tra cứu  | [docs/archive/](docs/archive/)     |
+- [Thiết kế kỹ thuật và đánh đổi](docs/technical-design.md).
+- [Hướng dẫn phát triển và xử lý sự cố](docs/development.md).
+- [Triển khai và vận hành hạ tầng](infra/README.md).
+- [Hướng dẫn đóng góp](CONTRIBUTING.md).
+- [Mục lục tài liệu](docs/README.md).
