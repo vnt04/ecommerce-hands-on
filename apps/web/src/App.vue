@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query';
 import { computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
 import { CART_QUERY_KEY, useCart } from './composables/useCart.js';
 import { useSessionStore } from './stores/session.js';
 
 const session = useSessionStore();
+const route = useRoute();
 const queryClient = useQueryClient();
 const { cart } = useCart();
 
 const itemCount = computed(() => cart.value.itemCount);
+const isHomePage = computed(() => route.name === 'products');
 
 /**
  * Đăng nhập, đăng ký hay đăng xuất đều đổi giỏ đang dùng: backend gộp giỏ ẩn danh
@@ -32,8 +35,8 @@ onMounted(() => {
 
 <template>
       <div class="min-h-screen bg-white font-sans text-gray-900">
-            <header class="sticky top-0 z-20 border-b border-gray-200/80 bg-white/95 backdrop-blur">
-                  <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <header class="sticky top-0 z-20 border-b border-gray-200/80 bg-white/95 text-gray-900 backdrop-blur">
+                  <div class="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-8">
                         <RouterLink to="/" class="flex items-center gap-2 text-xl font-bold tracking-tight text-brand">
                               <span
                                     class="flex size-8 items-center justify-center rounded-full bg-brand text-xs text-white"
@@ -99,9 +102,9 @@ onMounted(() => {
                   <RouterView />
             </main>
 
-            <footer class="mt-12 border-t border-gray-200 bg-[#fafaf9]">
+            <footer class="border-t border-gray-200 bg-[#fafaf9]" :class="isHomePage ? 'mt-0' : 'mt-12'">
                   <div
-                        class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+                        class="mx-auto flex max-w-[1680px] flex-col gap-2 px-4 py-6 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:px-8"
                   >
                         <span class="font-semibold tracking-tight text-brand">ShopFlow</span>
                         <span>Áo thun in sẵn · Chọn màu, chọn size, mặc theo cách của bạn.</span>

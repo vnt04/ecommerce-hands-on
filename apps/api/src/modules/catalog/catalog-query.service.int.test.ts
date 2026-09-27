@@ -78,6 +78,29 @@ beforeEach(async () => {
 });
 
 describe('listProducts', () => {
+      test('chỉ công khai catalog áo thun, bỏ dữ liệu của danh mục khác', async () => {
+            const axes = await seedAxes();
+            await createPublishedProduct(axes, { designCode: 'TEE-SUNSET', slug: 'tee-sunset', name: 'Tee Sunset' });
+            const unrelatedId = await createPublishedProduct(axes, {
+                  designCode: 'SQL-TRAINING-001',
+                  slug: 'sql-training-product',
+                  name: 'Sản phẩm luyện SQL',
+            });
+            const unrelatedCategory = await prisma.category.create({
+                  data: { slug: 'sql-practice', name: 'SQL practice' },
+                  select: { id: true },
+            });
+            await prisma.product.update({ where: { id: unrelatedId }, data: { categoryId: unrelatedCategory.id } });
+
+            const products = await query.listProducts(parseQuery());
+            const filters = await query.listFilterOptions();
+
+            expect(products.items.map((item) => item.slug)).toEqual(['tee-sunset']);
+            expect(products.meta.total).toBe(1);
+            expect(filters.colors.map((color) => color.code)).toEqual(['BLK', 'NVY', 'WHT']);
+            expect(filters.sizes.map((size) => size.name)).toEqual(['S', 'M', 'L', 'XL', '2XL']);
+      });
+
       test('trả thẻ sản phẩm chứ không trả toàn bộ ma trận biến thể', async () => {
             const axes = await seedAxes();
             await createPublishedProduct(axes, { designCode: 'TEE-SUNSET', slug: 'tee-sunset', name: 'Tee Sunset' });

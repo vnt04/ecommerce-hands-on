@@ -50,8 +50,10 @@ export class CatalogQueryService {
                   JOIN product_variants v ON v.product_id = p.id AND v.is_active
                   JOIN colors c ON c.id = v.color_id
                   JOIN sizes s ON s.id = v.size_id
+                  JOIN categories category ON category.id = p.category_id
                   WHERE p.status = 'PUBLISHED'
                     AND p.archived_at IS NULL
+                    AND category.slug = 'ao-thun'
                     AND (${color}::text IS NULL OR c.code = ${color}::text)
                     AND (${size}::text IS NULL OR s.name = ${size}::text)
                     AND (${minPrice}::bigint IS NULL OR v.price >= ${minPrice}::bigint)
@@ -186,14 +188,28 @@ export class CatalogQueryService {
        */
       async listFilterOptions(): Promise<CatalogFilterOptions> {
             const [colors, sizes] = await Promise.all([
-                  this.prisma.color.findMany({
-                        orderBy: { code: 'asc' },
-                        select: { code: true, name: true, hexCode: true },
-                  }),
-                  this.prisma.size.findMany({
-                        orderBy: { sortOrder: 'asc' },
-                        select: { name: true, sortOrder: true },
-                  }),
+                  this.prisma.$queryRaw<Array<{ code: string; name: string; hexCode: string }>>`
+                        SELECT DISTINCT c.code, c.name, c.hex_code AS "hexCode"
+                        FROM categories category
+                        JOIN products p ON p.category_id = category.id
+                        JOIN product_variants v ON v.product_id = p.id AND v.is_active
+                        JOIN colors c ON c.id = v.color_id
+                        WHERE category.slug = 'ao-thun'
+                          AND p.status = 'PUBLISHED'
+                          AND p.archived_at IS NULL
+                        ORDER BY c.code
+                  `,
+                  this.prisma.$queryRaw<Array<{ name: string; sortOrder: number }>>`
+                        SELECT DISTINCT s.name, s.sort_order AS "sortOrder"
+                        FROM categories category
+                        JOIN products p ON p.category_id = category.id
+                        JOIN product_variants v ON v.product_id = p.id AND v.is_active
+                        JOIN sizes s ON s.id = v.size_id
+                        WHERE category.slug = 'ao-thun'
+                          AND p.status = 'PUBLISHED'
+                          AND p.archived_at IS NULL
+                        ORDER BY s.sort_order
+                  `,
             ]);
 
             return { colors, sizes };

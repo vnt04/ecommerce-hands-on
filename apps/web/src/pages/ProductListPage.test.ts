@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 
 import ProductListPage from './ProductListPage.vue';
+import { demoProductImage } from '../data/demoProductImages.js';
 
 const fetchProducts = vi.fn();
 const fetchFilterOptions = vi.fn();
@@ -28,9 +29,44 @@ const FILTER_OPTIONS: CatalogFilterOptions = {
 const CARDS: ProductCard[] = [
       {
             slug: 'tee-sunset',
-            name: 'Tee Sunset',
+            name: 'Áo thun Sunset',
             minPrice: '299000',
             colors: [{ code: 'BLK', name: 'Đen', hexCode: '#000000' }],
+            inStock: true,
+      },
+      {
+            slug: 'tee-mountain',
+            name: 'Áo thun Mountain',
+            minPrice: '319000',
+            colors: [{ code: 'NVY', name: 'Navy', hexCode: '#1B2A4A' }],
+            inStock: true,
+      },
+      {
+            slug: 'tee-coastline',
+            name: 'Áo thun Coastline',
+            minPrice: '279000',
+            colors: [{ code: 'WHT', name: 'Trắng', hexCode: '#FFFFFF' }],
+            inStock: true,
+      },
+      {
+            slug: 'tee-botanical',
+            name: 'Áo thun Botanical',
+            minPrice: '329000',
+            colors: [{ code: 'WHT', name: 'Trắng', hexCode: '#FFFFFF' }],
+            inStock: true,
+      },
+      {
+            slug: 'tee-orbit',
+            name: 'Áo thun Orbit',
+            minPrice: '309000',
+            colors: [{ code: 'BLK', name: 'Đen', hexCode: '#000000' }],
+            inStock: true,
+      },
+      {
+            slug: 'tee-arch',
+            name: 'Áo thun Arch',
+            minPrice: '289000',
+            colors: [{ code: 'NVY', name: 'Navy', hexCode: '#1B2A4A' }],
             inStock: true,
       },
 ];
@@ -76,8 +112,22 @@ describe('ProductListPage', () => {
       test('hiển thị ảnh minh họa cho sản phẩm mẫu', async () => {
             const { wrapper } = await mountPage();
 
-            expect(wrapper.find('img').attributes('src')).toBe('/images/demo/tee-sunset.png');
-            expect(wrapper.find('img').attributes('alt')).toBe('Ảnh minh họa Tee Sunset');
+            expect(wrapper.findAll('img').map((image) => image.attributes('src'))).toEqual([
+                  '/images/demo/tee-sunset.png',
+                  '/images/demo/tee-mountain.png',
+                  '/images/demo/tee-coastline.png',
+                  '/images/demo/tee-botanical.png',
+                  '/images/demo/tee-orbit.png',
+                  '/images/demo/tee-arch.png',
+            ]);
+            expect(wrapper.find('img').attributes('alt')).toBe('Ảnh minh họa Áo thun Sunset');
+      });
+
+      test('luân phiên ảnh demo cho các sản phẩm seed đánh số', () => {
+            expect(demoProductImage('tee-demo-001')).toBe('/images/demo/tee-sunset.png');
+            expect(demoProductImage('tee-demo-007')).toBe('/images/demo/tee-sunset.png');
+            expect(demoProductImage('tee-demo-060')).toBe('/images/demo/tee-arch.png');
+            expect(demoProductImage('other-product')).toBeUndefined();
       });
 
       test('tìm sản phẩm theo tên và lưu từ khóa trên URL', async () => {
@@ -125,6 +175,19 @@ describe('ProductListPage', () => {
             const { wrapper } = await mountPage();
 
             expect(wrapper.text()).toContain('Không có thiết kế nào khớp bộ lọc');
+      });
+
+      test('hiển thị tối đa ba trang cùng nút trước sau khi catalog có nhiều dữ liệu', async () => {
+            fetchProducts.mockResolvedValue({ data: CARDS, meta: { page: 1, limit: 20, total: 470000 } });
+
+            const { wrapper } = await mountPage();
+            const pagination = wrapper.get('nav[aria-label="Phân trang"]');
+
+            expect(pagination.findAll('button')).toHaveLength(5);
+            expect(pagination.text()).toContain('Trước');
+            expect(pagination.text()).toContain('Sau');
+            expect(pagination.findAll('button[aria-current="page"]')).toHaveLength(1);
+            expect(pagination.findAll('button[aria-label^="Trang "]')).toHaveLength(3);
       });
 
       test('hiển thị trạng thái lỗi thay vì trang trắng khi API hỏng', async () => {

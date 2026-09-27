@@ -25,7 +25,7 @@ const EMPTY_CART = { lines: [], subtotal: '0', itemCount: 0 };
 const DETAIL: ProductDetail = {
       slug: 'tee-sunset',
       name: 'Tee Sunset',
-      description: null,
+      description: 'Áo thun dáng relaxed với hình mặt trời cuối ngày tối giản.',
       material: 'Cotton 100%, 250gsm',
       careGuide: null,
       printMethod: null,
@@ -82,6 +82,12 @@ async function selectSize(wrapper: Awaited<ReturnType<typeof mountPage>>, name: 
 }
 
 describe('ProductDetailPage', () => {
+      test('hiển thị mô tả sản phẩm', async () => {
+            const wrapper = await mountPage();
+
+            expect(wrapper.text()).toContain('Áo thun dáng relaxed với hình mặt trời cuối ngày tối giản.');
+      });
+
       test('size hết hàng bị vô hiệu hoá chứ không bị ẩn', async () => {
             // Ràng buộc R9. Ẩn đi khiến khách tưởng shop không bán size đó.
             const wrapper = await mountPage();

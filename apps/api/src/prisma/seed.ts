@@ -5,8 +5,8 @@ import { PrismaClient } from '@prisma/client';
 import { buildVariantMatrix } from '../modules/catalog/domain/variant-matrix.js';
 
 /**
- * Dữ liệu mẫu đủ thật để dùng thử: hai thiết kế, đủ màu và size, có tổ hợp bị tắt
- * và có SKU hết hàng. Dữ liệu quá sạch che mất đúng những trạng thái hay hỏng nhất.
+ * Catalog demo có nhiều thiết kế và ma trận màu/size, tồn kho không đồng đều,
+ * một số SKU hết hàng và một số tổ hợp không được sản xuất.
  *
  * Chạy lại được nhiều lần: mọi thao tác ghi đều dùng upsert hoặc bỏ qua khi đã tồn tại.
  */
@@ -24,10 +24,8 @@ const SIZES = [
       { name: '2XL', sortOrder: 5 },
 ];
 
-const BASE_PRICE = 299000n;
-const LARGE_SIZE_PRICE = 319000n;
-const DEFAULT_STOCK = 20;
 const TSHIRT_WEIGHT_GRAMS = 220;
+const LEGACY_SEED_DESCRIPTION = 'Áo thun cotton in hình, form unisex.';
 
 /**
  * Tài khoản quản trị cho môi trường phát triển.
@@ -41,15 +39,130 @@ const ADMIN_PASSWORD = 'admin-doi-mat-khau-ngay';
 const BCRYPT_COST = 12;
 
 const DESIGNS = [
-      { designCode: 'TEE-SUNSET', slug: 'tee-sunset', name: 'Tee Sunset' },
-      { designCode: 'TEE-MOUNTAIN', slug: 'tee-mountain', name: 'Tee Mountain' },
+      {
+            designCode: 'TEE-SUNSET',
+            slug: 'tee-sunset',
+            name: 'Áo thun Sunset',
+            description: 'Áo thun dáng relaxed với hình mặt trời cuối ngày tối giản, dễ phối cùng denim và quần short.',
+            material: 'Cotton chải kỹ 100%, định lượng 250gsm',
+            careGuide: 'Giặt máy tối đa 30°C, lộn trái áo khi giặt và ủi; tránh sấy nhiệt cao.',
+            printMethod: 'In lụa mực nước',
+            basePrice: 299000n,
+      },
+      {
+            designCode: 'TEE-MOUNTAIN',
+            slug: 'tee-mountain',
+            name: 'Áo thun Mountain',
+            description: 'Hình núi và mặt trời nét mảnh lấy cảm hứng từ những chuyến đi cuối tuần; form unisex thoải mái.',
+            material: 'Cotton chải kỹ 100%, định lượng 250gsm',
+            careGuide: 'Giặt máy tối đa 30°C với màu tương tự, lộn trái áo khi giặt; phơi nơi thoáng mát.',
+            printMethod: 'In lụa mực nước',
+            basePrice: 319000n,
+      },
+      {
+            designCode: 'TEE-COAST',
+            slug: 'tee-coastline',
+            name: 'Áo thun Coastline',
+            description: 'Đường sóng nhỏ gọn ở ngực áo, gợi cảm hứng từ những ngày đi biển và phong cách thường ngày nhẹ nhàng.',
+            material: 'Cotton compact 100%, định lượng 240gsm',
+            careGuide: 'Giặt máy chế độ nhẹ tối đa 30°C, lộn trái áo; không ủi trực tiếp lên hình in.',
+            printMethod: 'In lụa mực nước',
+            basePrice: 279000n,
+      },
+      {
+            designCode: 'TEE-BOTANICAL',
+            slug: 'tee-botanical',
+            name: 'Áo thun Botanical',
+            description: 'Họa tiết lá thực vật được tinh giản thành một điểm nhấn nhỏ, phù hợp mặc riêng hoặc phối layer.',
+            material: 'Cotton hữu cơ 100%, định lượng 230gsm',
+            careGuide: 'Giặt với nước lạnh cùng màu tương tự, dùng chất giặt dịu nhẹ; phơi tự nhiên để giữ phom áo.',
+            printMethod: 'In lụa mực gốc nước',
+            basePrice: 329000n,
+      },
+      {
+            designCode: 'TEE-ORBIT',
+            slug: 'tee-orbit',
+            name: 'Áo thun Orbit',
+            description: 'Minh họa quỹ đạo nhỏ với bảng màu trầm, dành cho người thích chi tiết đồ họa kín đáo.',
+            material: 'Cotton chải kỹ 100%, định lượng 250gsm',
+            careGuide: 'Lộn trái áo trước khi giặt, giặt máy tối đa 30°C; không dùng thuốc tẩy.',
+            printMethod: 'In lụa nhiều lớp',
+            basePrice: 309000n,
+      },
+      {
+            designCode: 'TEE-ARCH',
+            slug: 'tee-arch',
+            name: 'Áo thun Arch',
+            description: 'Hình khối vòm cân đối tạo điểm nhấn hiện đại nhưng vẫn dễ mặc trong nhiều dịp.',
+            material: 'Cotton compact 100%, định lượng 250gsm',
+            careGuide: 'Giặt máy chế độ nhẹ, lộn trái áo khi giặt và ủi; phơi ngang để hạn chế bai vai.',
+            printMethod: 'In lụa mực nước',
+            basePrice: 289000n,
+      },
+      ...Array.from({ length: 54 }, (_, index) => {
+            const edition = String(index + 1).padStart(3, '0');
+            const theme = [
+                  {
+                        name: 'Sunset',
+                        motif: 'mặt trời cuối ngày',
+                        material: 'Cotton chải kỹ 100%, định lượng 250gsm',
+                        printMethod: 'In lụa mực nước',
+                  },
+                  {
+                        name: 'Mountain',
+                        motif: 'đường nét núi và mặt trời',
+                        material: 'Cotton compact 100%, định lượng 240gsm',
+                        printMethod: 'In lụa mực nước',
+                  },
+                  {
+                        name: 'Coastline',
+                        motif: 'đường sóng ven biển',
+                        material: 'Cotton compact 100%, định lượng 240gsm',
+                        printMethod: 'In lụa mực nước',
+                  },
+                  {
+                        name: 'Botanical',
+                        motif: 'họa tiết lá thực vật',
+                        material: 'Cotton hữu cơ 100%, định lượng 230gsm',
+                        printMethod: 'In lụa mực gốc nước',
+                  },
+                  {
+                        name: 'Orbit',
+                        motif: 'quỹ đạo và hành tinh',
+                        material: 'Cotton chải kỹ 100%, định lượng 250gsm',
+                        printMethod: 'In lụa nhiều lớp',
+                  },
+                  {
+                        name: 'Arch',
+                        motif: 'hình khối vòm tối giản',
+                        material: 'Cotton compact 100%, định lượng 250gsm',
+                        printMethod: 'In lụa mực nước',
+                  },
+            ][index % 6]!;
+
+            return {
+                  designCode: `TEE-DEMO-${edition}`,
+                  slug: `tee-demo-${edition}`,
+                  name: `Áo thun ${theme.name} ${edition}`,
+                  description: `Phiên bản ${edition} với ${theme.motif}, form unisex dễ phối cho trang phục hằng ngày.`,
+                  material: theme.material,
+                  careGuide: 'Giặt máy tối đa 30°C, lộn trái áo khi giặt; không ủi trực tiếp lên hình in.',
+                  printMethod: theme.printMethod,
+                  basePrice: 269000n + BigInt((index * 3) % 10) * 10000n,
+            };
+      }),
 ];
 
 /** Navy không sản xuất size 2XL. Tổ hợp bị tắt chứ không bị xoá khỏi ma trận. */
-const DISABLED_SKUS = ['TEE-SUNSET-NVY-2XL', 'TEE-MOUNTAIN-NVY-2XL'];
+const DISABLED_SKUS = DESIGNS.map((design) => `${design.designCode}-NVY-2XL`);
 
 /** Một SKU hết hàng để trang sản phẩm có trạng thái vô hiệu hoá mà kiểm chứng. */
-const OUT_OF_STOCK_SKUS = ['TEE-SUNSET-BLK-M'];
+const OUT_OF_STOCK_SKUS = [
+      'TEE-SUNSET-BLK-M',
+      'TEE-COAST-WHT-L',
+      'TEE-ORBIT-NVY-S',
+      ...DESIGNS.filter((_, index) => index >= 6 && index % 5 === 0).map((design) => `${design.designCode}-BLK-M`),
+];
 
 async function main(): Promise<void> {
       const connectionString = process.env.DATABASE_URL;
@@ -118,10 +231,67 @@ async function main(): Promise<void> {
 
             const orderedSizes = [...sizes].sort((left, right) => left.sortOrder - right.sortOrder);
 
-            for (const design of DESIGNS) {
+            for (const [designIndex, design] of DESIGNS.entries()) {
                   const existing = await prisma.product.findUnique({ where: { designCode: design.designCode } });
 
                   if (existing !== null) {
+                        // Nâng dữ liệu seed cũ, nhưng không ghi đè nội dung đã được quản trị viên chỉnh sửa.
+                        if (existing.description === LEGACY_SEED_DESCRIPTION) {
+                              await prisma.$transaction(async (tx) => {
+                                    await tx.product.update({
+                                          where: { id: existing.id },
+                                          data: {
+                                                name: design.name,
+                                                description: design.description,
+                                                material: design.material,
+                                                careGuide: design.careGuide,
+                                                printMethod: design.printMethod,
+                                          },
+                                    });
+
+                                    const existingVariants = await tx.productVariant.findMany({
+                                          where: { productId: existing.id },
+                                          select: { sku: true },
+                                          orderBy: { sku: 'asc' },
+                                    });
+
+                                    for (const [index, variant] of existingVariants.entries()) {
+                                          await tx.productVariant.update({
+                                                where: { sku: variant.sku },
+                                                data: {
+                                                      price: design.basePrice + (variant.sku.endsWith('-2XL') ? 20000n : 0n),
+                                                      stockQuantity: OUT_OF_STOCK_SKUS.includes(variant.sku)
+                                                            ? 0
+                                                            : 5 + ((index * 7 + designIndex * 3) % 21),
+                                                      isActive: !DISABLED_SKUS.includes(variant.sku),
+                                                },
+                                          });
+                                    }
+                              });
+                        } else if (existing.description === design.description) {
+                              // Chỉ nâng bảng giá nếu toàn bộ SKU vẫn khớp chính xác giá mặc định của seed đời trước.
+                              const previousSeedVariants = await prisma.productVariant.findMany({
+                                    where: { productId: existing.id },
+                                    select: { sku: true, price: true },
+                              });
+                              const stillHasPreviousSeedPrices = previousSeedVariants.every(
+                                    (variant) => variant.price === (variant.sku.endsWith('-2XL') ? 319000n : 299000n),
+                              );
+
+                              if (stillHasPreviousSeedPrices && design.basePrice !== 299000n) {
+                                    await prisma.$transaction(
+                                          previousSeedVariants.map((variant) =>
+                                                prisma.productVariant.update({
+                                                      where: { sku: variant.sku },
+                                                      data: {
+                                                            price: design.basePrice + (variant.sku.endsWith('-2XL') ? 20000n : 0n),
+                                                      },
+                                                }),
+                                          ),
+                                    );
+                              }
+                        }
+
                         continue;
                   }
 
@@ -139,24 +309,26 @@ async function main(): Promise<void> {
                                     designCode: design.designCode,
                                     slug: design.slug,
                                     name: design.name,
-                                    description: 'Áo thun cotton in hình, form unisex.',
-                                    material: 'Cotton 100%, 250gsm',
-                                    careGuide: 'Giặt máy nước lạnh, lộn trái, không sấy khô.',
-                                    printMethod: 'In lụa',
+                                    description: design.description,
+                                    material: design.material,
+                                    careGuide: design.careGuide,
+                                    printMethod: design.printMethod,
                                     status: 'PUBLISHED',
                               },
                               select: { id: true },
                         });
 
                         await tx.productVariant.createMany({
-                              data: matrix.map((combination) => ({
+                              data: matrix.map((combination, index) => ({
                                     productId: product.id,
                                     colorId: combination.colorId,
                                     sizeId: combination.sizeId,
                                     sku: combination.sku,
-                                    // Size lớn tốn nhiều vải hơn nên có giá khác.
-                                    price: combination.sku.endsWith('-2XL') ? LARGE_SIZE_PRICE : BASE_PRICE,
-                                    stockQuantity: OUT_OF_STOCK_SKUS.includes(combination.sku) ? 0 : DEFAULT_STOCK,
+                                    // Size 2XL tốn thêm vải; tồn kho được chia không đồng đều như catalog bán thật.
+                                    price: design.basePrice + (combination.sku.endsWith('-2XL') ? 20000n : 0n),
+                                    stockQuantity: OUT_OF_STOCK_SKUS.includes(combination.sku)
+                                          ? 0
+                                          : 5 + ((index * 7 + designIndex * 3) % 21),
                                     weightGrams: TSHIRT_WEIGHT_GRAMS,
                                     isActive: !DISABLED_SKUS.includes(combination.sku),
                               })),
@@ -165,9 +337,9 @@ async function main(): Promise<void> {
             }
 
             const [productCount, variantCount, sellableCount] = await Promise.all([
-                  prisma.product.count(),
-                  prisma.productVariant.count(),
-                  prisma.productVariant.count({ where: { isActive: true } }),
+                  prisma.product.count({ where: { categoryId: category.id } }),
+                  prisma.productVariant.count({ where: { product: { categoryId: category.id } } }),
+                  prisma.productVariant.count({ where: { isActive: true, product: { categoryId: category.id } } }),
             ]);
 
             process.stdout.write(`Seed xong: ${productCount} thiết kế, ${variantCount} biến thể, ${sellableCount} biến thể bán được\n`);

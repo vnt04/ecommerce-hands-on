@@ -9,6 +9,7 @@
 
 html {
       scroll-behavior: smooth;
+      overflow-x: clip;
 }
 
 body {
@@ -17,6 +18,19 @@ body {
       color: #1f2937;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
+      overflow-x: clip;
+}
+
+.storefront-page {
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
+}
+
+.catalog-content {
+      box-sizing: border-box;
+      width: calc(100% - clamp(4rem, 8vw, 8rem));
+      max-width: 1680px;
+      margin-inline: auto;
 }
 
 button,
@@ -25,6 +39,12 @@ input,
 select,
 textarea {
       -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled),
+a[href],
+[role='button']:not([aria-disabled='true']) {
+      cursor: pointer;
 }
 
 :focus-visible {

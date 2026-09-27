@@ -97,6 +97,7 @@ const sizeChartRows = computed(() => {
 
                   <h1 class="mt-2 text-3xl font-semibold tracking-tight text-brand">{{ product.name }}</h1>
                   <p class="mt-1 text-xl">{{ displayPrice }}</p>
+                  <p v-if="product.description" class="mt-3 max-w-2xl leading-6 text-gray-600">{{ product.description }}</p>
 
                   <div class="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">
                         <div>
