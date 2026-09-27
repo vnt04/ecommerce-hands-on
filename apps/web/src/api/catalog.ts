@@ -6,6 +6,7 @@ export type ProductFilters = {
       color?: string;
       size?: string;
       inStock?: boolean;
+      q?: string;
       page?: number;
 };
 
@@ -13,6 +14,7 @@ export function fetchProducts(filters: ProductFilters): Promise<ApiResult<Produc
       return apiGet<ProductCard[]>('/products', {
             color: filters.color,
             size: filters.size,
+            q: filters.q,
             // Chỉ gửi khi bật: gửi inStock=false nghĩa là "không lọc", nhưng viết ra
             // trên URL lại trông như "chỉ lấy hàng đã hết".
             inStock: filters.inStock === true ? 'true' : undefined,

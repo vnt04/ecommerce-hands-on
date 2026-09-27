@@ -121,6 +121,34 @@ describe('ProductDetailPage', () => {
             expect(wrapper.find('img').attributes('src')).toBe('/trang.jpg');
       });
 
+      test('dùng ảnh minh họa local khi sản phẩm chưa có ảnh tải lên', async () => {
+            fetchProduct.mockResolvedValue({
+                  data: {
+                        ...DETAIL,
+                        colors: DETAIL.colors.map((color) => ({ ...color, images: [] })),
+                  },
+            });
+
+            const wrapper = await mountPage();
+
+            expect(wrapper.find('img').attributes('src')).toBe('/images/demo/tee-sunset.png');
+            expect(wrapper.text()).toContain('Ảnh minh họa thiết kế');
+      });
+
+      test('dùng ảnh minh họa local khi sản phẩm chưa có ảnh tải lên', async () => {
+            fetchProduct.mockResolvedValue({
+                  data: {
+                        ...DETAIL,
+                        colors: DETAIL.colors.map((color) => ({ ...color, images: [] })),
+                  },
+            });
+
+            const wrapper = await mountPage();
+
+            expect(wrapper.find('img').attributes('src')).toBe('/images/demo/tee-sunset.png');
+            expect(wrapper.text()).toContain('Ảnh minh họa thiết kế');
+      });
+
       test('đổi màu thì tập size còn mua được đổi theo', async () => {
             // Màu Trắng chỉ có size S; hai size còn lại phải vô hiệu hoá.
             const wrapper = await mountPage();

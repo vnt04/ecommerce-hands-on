@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue';
 import { fetchProduct } from '../api/catalog.js';
 import QueryState from '../components/QueryState.vue';
 import { useCart } from '../composables/useCart.js';
+import { demoProductImage } from '../data/demoProductImages.js';
 
 const props = defineProps<{ slug: string }>();
 
@@ -30,6 +31,7 @@ watch(
 );
 
 const selectedColor = computed(() => product.value?.colors.find((color) => color.code === selectedColorCode.value));
+const demoImage = computed(() => demoProductImage(props.slug));
 
 /** Biến thể của màu đang chọn, tra theo tên size. */
 const variantsBySize = computed(() => {
@@ -93,19 +95,30 @@ const sizeChartRows = computed(() => {
             <article v-if="product">
                   <RouterLink to="/" class="text-sm text-gray-500 hover:underline">← Tất cả thiết kế</RouterLink>
 
-                  <h1 class="mt-2 text-2xl font-bold text-brand">{{ product.name }}</h1>
+                  <h1 class="mt-2 text-3xl font-semibold tracking-tight text-brand">{{ product.name }}</h1>
                   <p class="mt-1 text-xl">{{ displayPrice }}</p>
 
                   <div class="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">
                         <div>
-                              <ul v-if="selectedColor && selectedColor.images.length > 0" class="grid grid-cols-2 gap-2">
+                              <ul v-if="selectedColor && selectedColor.images.length > 0" class="grid grid-cols-2 gap-3">
                                     <li v-for="image in selectedColor.images" :key="image.url">
-                                          <img :src="image.url" :alt="image.altText ?? product.name" class="w-full rounded" />
+                                          <img
+                                                :src="image.url"
+                                                :alt="image.altText ?? product.name"
+                                                class="aspect-square w-full rounded-xl object-cover"
+                                          />
                                     </li>
                               </ul>
-                              <p v-else class="flex h-48 items-center justify-center rounded bg-gray-100 text-sm text-gray-500">
+                              <div v-else-if="demoImage" class="overflow-hidden rounded-2xl bg-[#f3f0ea]">
+                                    <img :src="demoImage" :alt="'Ảnh minh họa ' + product.name" class="aspect-square w-full object-cover" />
+                                    <p class="px-4 py-3 text-xs text-gray-500">Ảnh minh họa thiết kế · màu sắc thực tế có thể khác</p>
+                              </div>
+                              <div
+                                    v-else
+                                    class="flex aspect-square items-center justify-center rounded-2xl bg-gray-100 px-6 text-center text-sm text-gray-500"
+                              >
                                     Chưa có ảnh cho màu này
-                              </p>
+                              </div>
                         </div>
 
                         <div>

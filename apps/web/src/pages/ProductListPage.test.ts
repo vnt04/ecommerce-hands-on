@@ -73,6 +73,24 @@ describe('ProductListPage', () => {
             expect(wrapper.text()).toContain('299.000 ₫');
       });
 
+      test('hiển thị ảnh minh họa cho sản phẩm mẫu', async () => {
+            const { wrapper } = await mountPage();
+
+            expect(wrapper.find('img').attributes('src')).toBe('/images/demo/tee-sunset.png');
+            expect(wrapper.find('img').attributes('alt')).toBe('Ảnh minh họa Tee Sunset');
+      });
+
+      test('tìm sản phẩm theo tên và lưu từ khóa trên URL', async () => {
+            const { wrapper, router } = await mountPage();
+
+            await wrapper.find('input[type="search"]').setValue('Tee Sunset');
+            await wrapper.find('form[role="search"]').trigger('submit');
+            await flushPromises();
+
+            expect(router.currentRoute.value.query.q).toBe('Tee Sunset');
+            expect(fetchProducts).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'Tee Sunset' }));
+      });
+
       test('đọc bộ lọc từ URL chứ không giữ bản sao riêng', async () => {
             // URL là nguồn sự thật duy nhất: nhờ vậy tải lại trang giữ nguyên lựa chọn
             // và khách gửi được link kết quả lọc cho người khác.

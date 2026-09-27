@@ -6,3 +6,43 @@
       --color-brand: #1b2a4a;
       --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
+
+html {
+      scroll-behavior: smooth;
+}
+
+body {
+      margin: 0;
+      background: #ffffff;
+      color: #1f2937;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+      -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+      outline: 2px solid #1b2a4a;
+      outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+      html {
+            scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+            scroll-behavior: auto !important;
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+      }
+}
